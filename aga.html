@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام الامتحانات الإلكترونية - مدرسة الجيل الجديد الخاصة</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ===== إعدادات عامة ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --blue-light: #4a7fff;
+            --blue-medium: #3567d6;
+            --blue-dark: #1e4db3;
+            --red-light: #ff6b6b;
+            --red-medium: #ff4757;
+            --red-dark: #e84151;
+            --green-light: #44c662;
+            --green-medium: #2ed573;
+            --green-dark: #1dd1a1;
+            --gray-light: #f8f9fa;
+            --gray-medium: #e9ecef;
+            --gray-dark: #6c757d;
+            --text-dark: #2d3436;
+            --text-light: #ffffff;
+        }
+        
+        body {
+            font-family: 'Cairo', 'Tajawal', sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--gray-medium);
+        }
+        
+        /* ===== الهيدر ===== */
+        .header {
+            background: linear-gradient(135deg, var(--blue-light) 0%, var(--blue-medium) 100%);
+            padding: 30px 25px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+            animation: shine 3s infinite;
+        }
+        
+        @keyframes shine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .subtitle {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 300;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* ===== المحتوى الرئيسي ===== */
+        .content {
+            padding: 40px;
+        }
+        
+        /* ===== نماذج الإدخال ===== */
+        .form-group {
+            margin-bottom: 30px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: var(--blue-dark);
+            font-size: 1.1rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            background: var(--gray-light);
+            border: 2px solid var(--gray-medium);
+            border-radius: 12px;
+            color: var(--text-dark);
+            font-size: 1.1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--blue-light);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(74, 127, 255, 0.15);
+        }
+        
+        /* ===== الأزرار ===== */
+        .btn {
+            display: inline-block;
+            padding: 16px 40px;
+            background: linear-gradient(to right, var(--blue-light), var(--blue-medium));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            text-align: center;
+            width: 100%;
+            margin-top: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to right, var(--blue-medium), var(--blue-dark));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .btn:hover::before {
+            opacity: 1;
+        }
+        
+        .btn span {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(74, 127, 255, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background: linear-gradient(to right, var(--green-light), var(--green-medium));
+        }
+        
+        .btn-success::before {
+            background: linear-gradient(to right, var(--green-medium), var(--green-dark));
+        }
+        
+        .btn-warning {
+            background: linear-gradient(to right, var(--red-light), var(--red-medium));
+        }
+        
+        .btn-warning::before {
+            background: linear-gradient(to right, var(--red-medium), var(--red-dark));
+        }
+        
+        /* ===== رسائل التنبيه ===== */
+        .alert {
+            padding: 18px 22px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            display: none;
+            border-right: 5px solid;
+        }
+        
+        .alert-success {
+            background: rgba(68, 198, 98, 0.1);
+            border-color: var(--green-medium);
+            color: var(--green-dark);
+        }
+        
+        .alert-error {
+            background: rgba(255, 107, 107, 0.1);
+            border-color: var(--red-medium);
+            color: var(--red-dark);
+        }
+        
+        .alert-info {
+            background: rgba(74, 127, 255, 0.1);
+            border-color: var(--blue-light);
+            color: var(--blue-medium);
+        }
+        
+        /* ===== شاشة الامتحان ===== */
+        .exam-header {
+            background: linear-gradient(135deg, var(--blue-light) 0%, var(--blue-medium) 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            color: white;
+        }
+        
+        .timer {
+            font-size: 2rem;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        .exam-info {
+            text-align: left;
+        }
+        
+        .exam-subject {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .exam-grade {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+        
+        .question-container {
+            background: var(--gray-light);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            border: 2px solid var(--gray-medium);
+            transition: all 0.3s ease;
+        }
+        
+        .question-container:hover {
+            border-color: var(--blue-light);
+            box-shadow: 0 8px 20px rgba(74, 127, 255, 0.1);
+        }
+        
+        .question-number {
+            color: var(--blue-medium);
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+        }
+        
+        .question-number::before {
+            content: '🎯';
+            margin-left: 10px;
+        }
+        
+        .question-text {
+            font-size: 1.25rem;
+            margin-bottom: 30px;
+            line-height: 1.8;
+            color: var(--text-dark);
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border-right: 4px solid var(--blue-light);
+        }
+        
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        
+        @media (min-width: 768px) {
+            .options-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        .option-label {
+            display: block;
+            padding: 18px 20px;
+            background: white;
+            border: 2px solid var(--gray-medium);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .option-label:hover {
+            background: rgba(74, 127, 255, 0.05);
+            border-color: var(--blue-light);
+            transform: translateY(-2px);
+        }
+        
+        .option-label.selected {
+            background: rgba(74, 127, 255, 0.1);
+            border-color: var(--blue-medium);
+            box-shadow: 0 5px 15px rgba(74, 127, 255, 0.2);
+        }
+        
+        .option-input {
+            display: none;
+        }
+        
+        .option-text {
+            display: flex;
+            align-items: center;
+        }
+        
+        .option-letter {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--blue-light), var(--blue-medium));
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 40px;
+            margin-left: 15px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        
+        .option-content {
+            font-size: 1.1rem;
+        }
+        
+        /* ===== عناصر التحكم ===== */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .controls .btn {
+            flex: 1;
+            padding: 15px;
+        }
+        
+        /* ===== شاشة النتائج ===== */
+        .results-container {
+            text-align: center;
+            padding: 50px 30px;
+        }
+        
+        .results-header {
+            font-size: 2.8rem;
+            margin-bottom: 40px;
+            color: var(--blue-medium);
+            position: relative;
+            display: inline-block;
+        }
+        
+        .results-header::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: linear-gradient(to right, var(--blue-light), var(--red-light));
+            border-radius: 2px;
+        }
+        
+        .result-card {
+            background: white;
+            border-radius: 20px;
+            padding: 35px;
+            margin: 25px auto;
+            max-width: 600px;
+            border: 2px solid var(--gray-medium);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--gray-medium);
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .result-label {
+            font-size: 1.2rem;
+            color: var(--gray-dark);
+            font-weight: 500;
+        }
+        
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--blue-medium);
+        }
+        
+        .result-value.highlight {
+            color: var(--green-dark);
+            font-size: 1.8rem;
+        }
+        
+        /* ===== التكيف مع الهاتف ===== */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                border-radius: 15px;
+            }
+            
+            .content {
+                padding: 25px 20px;
+            }
+            
+            .header {
+                padding: 25px 20px;
+            }
+            
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1.1rem;
+            }
+            
+            .exam-header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .exam-info {
+                text-align: center;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .question-container {
+                padding: 20px;
+            }
+            
+            .question-text {
+                font-size: 1.1rem;
+                padding: 12px;
+            }
+            
+            .option-label {
+                padding: 15px;
+            }
+            
+            .results-header {
+                font-size: 2.2rem;
+            }
+            
+            .result-card {
+                padding: 25px;
+            }
+        }
+        
+        /* ===== التحميل ===== */
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 60px 30px;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(74, 127, 255, 0.1);
+            border-top: 5px solid var(--blue-light);
+            border-right: 5px solid var(--red-light);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 25px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* ===== صورة الطالب ===== */
+        .student-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(74, 127, 255, 0.1), rgba(255, 107, 107, 0.1));
+            border-radius: 15px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(74, 127, 255, 0.2);
+        }
+        
+        .student-avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--blue-light), var(--red-light));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.3rem;
+            color: white;
+            box-shadow: 0 5px 15px rgba(74, 127, 255, 0.3);
+        }
+        
+        .student-details h3 {
+            margin-bottom: 8px;
+            color: var(--blue-dark);
+            font-size: 1.3rem;
+        }
+        
+        .student-details p {
+            color: var(--gray-dark);
+            font-size: 1rem;
+        }
+        
+        /* ===== الترتيب ===== */
+        .ranking-display {
+            background: linear-gradient(135deg, rgba(74, 127, 255, 0.05), rgba(68, 198, 98, 0.05));
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 30px;
+            border: 2px solid rgba(74, 127, 255, 0.1);
+        }
+        
+        .ranking-title {
+            color: var(--blue-medium);
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .ranking-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .ranking-item:last-child {
+            border-bottom: none;
+        }
+        
+        .rank-number {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, var(--blue-light), var(--blue-medium));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 5px 15px rgba(74, 127, 255, 0.2);
+        }
+        
+        .ranking-info {
+            flex: 1;
+            margin: 0 15px;
+        }
+        
+        .ranking-name {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+        
+        .ranking-points {
+            color: var(--green-dark);
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        /* ===== التعليمات ===== */
+        .instructions {
+            background: rgba(74, 127, 255, 0.05);
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 30px;
+            border: 2px solid rgba(74, 127, 255, 0.1);
+        }
+        
+        .instructions-title {
+            color: var(--blue-medium);
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .instructions-title::before {
+            content: '📌';
+            margin-left: 10px;
+        }
+        
+        .instructions-list {
+            list-style: none;
+            padding-right: 0;
+        }
+        
+        .instructions-list li {
+            margin-bottom: 12px;
+            padding-right: 10px;
+            position: relative;
+        }
+        
+        .instructions-list li::before {
+            content: '•';
+            color: var(--blue-light);
+            font-weight: bold;
+            position: absolute;
+            right: -15px;
+        }
+        
+        /* ===== نظام النقاط ===== */
+        .points-system {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.05), rgba(68, 198, 98, 0.05));
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 30px;
+            border: 2px solid rgba(255, 107, 107, 0.1);
+        }
+        
+        .points-title {
+            color: var(--red-medium);
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .points-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .point-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid var(--gray-medium);
+        }
+        
+        .point-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--green-dark);
+            margin-bottom: 5px;
+        }
+        
+        .point-label {
+            color: var(--gray-dark);
+            font-size: 0.9rem;
+        }
+        
+        /* ===== تقدم الأسئلة ===== */
+        .progress-dots {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 25px 0;
+        }
+        
+        .progress-dot {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: var(--gray-medium);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .progress-dot.answered {
+            background: var(--green-light);
+            color: white;
+        }
+        
+        .progress-dot.current {
+            background: var(--blue-light);
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(74, 127, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- الهيدر -->
+        <div class="header">
+            <div class="logo">نظام الامتحانات الإلكترونية</div>
+            <div class="subtitle">مدرسة الجيل الجديد الخاصة</div>
+        </div>
+        
+        <!-- المحتوى الرئيسي -->
+        <div class="content" id="content">
+            <!-- الرسائل -->
+            <div class="alert alert-success" id="successAlert"></div>
+            <div class="alert alert-error" id="errorAlert"></div>
+            <div class="alert alert-info" id="infoAlert"></div>
+            
+            <!-- شاشة التحميل -->
+            <div class="loader" id="loader">
+                <div class="spinner"></div>
+                <p style="color: var(--blue-medium); font-size: 1.1rem; margin-top: 15px;">جاري تحميل النظام...</p>
+            </div>
+            
+            <!-- المحتوى الديناميكي سيظهر هنا -->
+        </div>
+    </div>
+
+    <script>
+        // ========== تهيئة Firebase ==========
+        const firebaseConfig = {
+            apiKey: "AIzaSyA1ajAWgzvW6pROu2bZBF1_4Vp4FdiUqxs",
+            authDomain: "elgeelelgdeed11111-eaa76.firebaseapp.com",
+            projectId: "elgeelelgdeed11111-eaa76",
+            storageBucket: "elgeelelgdeed11111-eaa76.firebasestorage.app",
+            messagingSenderId: "546105467938",
+            appId: "1:546105467938:web:431bb851756b8463d5567b",
+            measurementId: "G-61WJ7HJ9KE"
+        };
+
+        // محاولة تهيئة Firebase
+        try {
+            firebase.initializeApp(firebaseConfig);
+            console.log("✅ Firebase initialized successfully");
+        } catch (error) {
+            console.error("❌ Firebase initialization error:", error);
+            showError("خطأ في تهيئة النظام. تأكد من اتصال الإنترنت.");
+        }
+
+        const db = firebase.firestore();
+
+        // ========== متغيرات النظام ==========
+        let currentStudent = null;
+        let examSessionId = null;
+        let timerInterval = null;
+        let timeLeft = 15 * 60; // 15 دقيقة بالثواني
+        let answers = {};
+        let examData = null;
+        let today = new Date().toISOString().split('T')[0];
+        let todaySubject = getTodaySubject();
+
+        // ========== جدول المواد اليومي ==========
+        function getTodaySubject() {
+            const day = new Date().getDay(); // 0 = الأحد
+            const schedule = {
+                0: { code: "arabic", name: "اللغة العربية", color: "#4a7fff" },
+                1: { code: "english", name: "اللغة الإنجليزية", color: "#ff6b6b" },
+                2: { code: "math", name: "الرياضيات", color: "#44c662" },
+                3: { code: "science", name: "العلوم", color: "#ffa502" },
+                4: { code: "social", name: "الدراسات الاجتماعية", color: "#9c88ff" },
+                5: null,  // الجمعة إجازة
+                6: null   // السبت إجازة
+            };
+            return schedule[day];
+        }
+
+        // ========== دوال مساعدة ==========
+        function showLoader(show) {
+            document.getElementById('loader').style.display = show ? 'block' : 'none';
+        }
+
+        function showAlert(type, message) {
+            const alertEl = document.getElementById(`${type}Alert`);
+            alertEl.innerHTML = message;
+            alertEl.style.display = 'block';
+            setTimeout(() => {
+                alertEl.style.display = 'none';
+            }, 5000);
+        }
+
+        function showError(message) {
+            showAlert('error', `❌ ${message}`);
+        }
+
+        function showSuccess(message) {
+            showAlert('success', `✅ ${message}`);
+        }
+
+        function showInfo(message) {
+            showAlert('info', `ℹ️ ${message}`);
+        }
+
+        // تحويل الأرقام العربية إلى إنجليزية
+        function normalizeNumbers(text) {
+            if (!text) return '';
+            const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+            return text.split('').map(char => {
+                const index = arabicNumbers.indexOf(char);
+                return index !== -1 ? index.toString() : char;
+            }).join('');
+        }
+
+        // استخراج المرحلة من الكود
+        function extractGradeFromCode(code) {
+            const normalized = normalizeNumbers(code);
+            
+            if (!normalized.startsWith('13520')) {
+                return null;
+            }
+            
+            if (normalized.length >= 8) {
+                const fourthFromRight = normalized[normalized.length - 4];
+                const grade = parseInt(fourthFromRight);
+                
+                const gradeMap = {
+                    '4': { number: 4, name: 'الصف الرابع الابتدائي' },
+                    '5': { number: 5, name: 'الصف الخامس الابتدائي' },
+                    '6': { number: 6, name: 'الصف السادس الابتدائي' },
+                    '7': { number: 7, name: 'الصف الأول الإعدادي' },
+                    '8': { number: 8, name: 'الصف الثاني الإعدادي' }
+                };
+                
+                if (gradeMap[grade]) {
+                    return {
+                        code: normalized,
+                        gradeNumber: gradeMap[grade].number,
+                        gradeName: gradeMap[grade].name
+                    };
+                }
+            }
+            return null;
+        }
+
+        // حساب تشابه الأسماء
+        function nameSimilarity(name1, name2) {
+            const clean = (str) => {
+                if (!str) return '';
+                return str.trim()
+                    .replace(/\s+/g, ' ')
+                    .replace(/[أإآ]/g, 'ا')
+                    .replace(/ة/g, 'ه')
+                    .replace(/[ىي]/g, 'ي')
+                    .toLowerCase();
+            };
+            
+            const n1 = clean(name1);
+            const n2 = clean(name2);
+            
+            if (n1 === n2) return 100;
+            
+            const words1 = n1.split(' ');
+            const words2 = n2.split(' ');
+            
+            if (words1.length !== words2.length) {
+                let matches = 0;
+                const maxLength = Math.max(n1.length, n2.length);
+                for (let i = 0; i < Math.min(n1.length, n2.length); i++) {
+                    if (n1[i] === n2[i]) matches++;
+                }
+                return (matches / maxLength) * 100;
+            }
+            
+            let wordMatches = 0;
+            for (let i = 0; i < words1.length; i++) {
+                if (words1[i] === words2[i]) {
+                    wordMatches++;
+                }
+            }
+            
+            return (wordMatches / words1.length) * 100;
+        }
+
+        // التحقق من وقت الامتحان
+        function isExamTime() {
+            const now = new Date();
+            const hours = now.getHours();
+            return hours >= 18 || hours < 24;
+        }
+
+        // ========== إنشاء الكوليكشنات ==========
+        async function initializeCollections() {
+            try {
+                showLoader(true);
+                
+                const collections = [
+                    { name: 'الطلاب', id: 'students' },
+                    { name: 'الامتحانات_اليومية', id: 'daily_exams' },
+                    { name: 'الجلسات_النشطة', id: 'exam_sessions' },
+                    { name: 'الإحصائيات_اليومية', id: 'daily_stats' },
+                    { name: 'الترتيب_الشهري', id: 'monthly_rankings' },
+                    { name: 'إحصائيات_المواد', id: 'subject_stats' }
+                ];
+                
+                for (const collection of collections) {
+                    try {
+                        const docRef = db.collection(collection.id).doc('_init');
+                        await docRef.set({
+                            _created: new Date(),
+                            _description: `كوليكشن ${collection.name} لنظام الامتحانات`
+                        });
+                        await docRef.delete();
+                        console.log(`✅ ${collection.name} created`);
+                    } catch (error) {
+                        console.log(`✅ ${collection.name} already exists`);
+                    }
+                }
+                
+                showLoader(false);
+                renderLoginScreen();
+                
+            } catch (error) {
+                showLoader(false);
+                showError('خطأ في تهيئة قاعدة البيانات: ' + error.message);
+            }
+        }
+
+        // ========== واجهات المستخدم ==========
+        function renderLoginScreen() {
+            if (!todaySubject) {
+                document.getElementById('content').innerHTML = `
+                    <div style="text-align: center; padding: 60px 30px;">
+                        <div style="font-size: 5rem; margin-bottom: 20px;">🏖️</div>
+                        <h2 style="color: var(--blue-medium); margin-bottom: 20px;">اليوم إجازة</h2>
+                        <p style="color: var(--gray-dark); margin-bottom: 30px; font-size: 1.1rem;">
+                            لا يوجد امتحان اليوم (الجمعة/السبت إجازة)
+                        </p>
+                        <div style="background: rgba(74, 127, 255, 0.1); padding: 25px; border-radius: 15px; margin: 30px auto; max-width: 500px;">
+                            <h4 style="color: var(--blue-medium); margin-bottom: 15px;">📅 جدول الامتحانات الأسبوعي:</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                <div style="background: white; padding: 15px; border-radius: 10px; text-align: center;">
+                                    <div style="color: var(--blue-light); font-weight: bold;">الأحد</div>
+                                    <div>اللغة العربية</div>
+                                </div>
+                                <div style="background: white; padding: 15px; border-radius: 10px; text-align: center;">
+                                    <div style="color: var(--red-light); font-weight: bold;">الاثنين</div>
+                                    <div>اللغة الإنجليزية</div>
+                                </div>
+                                <div style="background: white; padding: 15px; border-radius: 10px; text-align: center;">
+                                    <div style="color: var(--green-light); font-weight: bold;">الثلاثاء</div>
+                                    <div>الرياضيات</div>
+                                </div>
+                                <div style="background: white; padding: 15px; border-radius: 10px; text-align: center;">
+                                    <div style="color: #ffa502; font-weight: bold;">الأربعاء</div>
+                                    <div>العلوم</div>
+                                </div>
+                                <div style="background: white; padding: 15px; border-radius: 10px; text-align: center;">
+                                    <div style="color: #9c88ff; font-weight: bold;">الخميس</div>
+                                    <div>الدراسات الاجتماعية</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            const content = `
+                <div class="student-info">
+                    <div class="student-avatar" style="background: linear-gradient(135deg, ${todaySubject.color}, ${todaySubject.color}88);">
+                        ${todaySubject.name.substring(0,2)}
+                    </div>
+                    <div class="student-details">
+                        <h3>${todaySubject.name}</h3>
+                        <p>${today} - وقت الامتحان: 6 مساءً إلى 12 منتصف الليل</p>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">الكود الدراسي</label>
+                    <input type="text" 
+                           id="studentCode" 
+                           class="form-input" 
+                           placeholder="أدخل كودك المكون من 9 أرقام"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           maxlength="9"
+                           required>
+                    <small style="color: var(--gray-dark); display: block; margin-top: 8px;">
+                        مثال: 135207032 (يبدأ بـ 13520، الرقم الرابع من اليمين هو المرحلة)
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">الاسم الثلاثي</label>
+                    <input type="text" 
+                           id="studentName" 
+                           class="form-input" 
+                           placeholder="الاسم الأول + اسم الأب + اسم الجد"
+                           required>
+                    <small style="color: var(--gray-dark); display: block; margin-top: 8px;">
+                        مثال: محمد أحمد علي (يجب إدخال الاسم بنفس الطريقة المسجلة)
+                    </small>
+                </div>
+                
+                <button class="btn" onclick="handleLogin()">
+                    <span>🚀 دخول الامتحان</span>
+                </button>
+                
+                <div class="instructions">
+                    <div class="instructions-title">تعليمات هامة</div>
+                    <ul class="instructions-list">
+                        <li>مدة الامتحان: 15 دقيقة فقط</li>
+                        <li>يمكنك إعادة الاتصال إذا انقطع الإنترنت</li>
+                        <li>يتم حفظ الإجابات تلقائياً كل 30 ثانية</li>
+                        <li>يحظر استخدام الكود أكثر من مرة في اليوم</li>
+                        <li>يتم تحديث الترتيب الشهري يومياً في الساعة 2 صباحاً</li>
+                        <li>في حالة أي مشكلة، تواصل مع الدعم الفني</li>
+                    </ul>
+                </div>
+                
+                <div class="points-system">
+                    <div class="points-title">✨ نظام النقاط</div>
+                    <div class="points-grid">
+                        <div class="point-item">
+                            <div class="point-value">+1</div>
+                            <div class="point-label">لكل درجة في الامتحان</div>
+                        </div>
+                        <div class="point-item">
+                            <div class="point-value">+2</div>
+                            <div class="point-label">للدرجة الكاملة (10/10)</div>
+                        </div>
+                        <div class="point-item">
+                            <div class="point-value">+3</div>
+                            <div class="point-label">لإنهاء في أول 5 دقائق</div>
+                        </div>
+                        <div class="point-item">
+                            <div class="point-value">+1</div>
+                            <div class="point-label">لحضور الامتحان</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('content').innerHTML = content;
+        }
+
+        // ========== معالجة تسجيل الدخول ==========
+        async function handleLogin() {
+            const codeInput = document.getElementById('studentCode');
+            const nameInput = document.getElementById('studentName');
+            
+            const rawCode = codeInput.value.trim();
+            const rawName = nameInput.value.trim();
+            
+            if (!rawCode || !rawName) {
+                showError('الرجاء ملء جميع الحقول');
+                return;
+            }
+            
+            if (!isExamTime()) {
+                showError('وقت الامتحان من الساعة 6 مساءً إلى 12 منتصف الليل فقط');
+                return;
+            }
+            
+            showLoader(true);
+            
+            try {
+                const gradeInfo = extractGradeFromCode(rawCode);
+                if (!gradeInfo) {
+                    showLoader(false);
+                    showError('الكود غير صحيح. يجب أن يبدأ بـ 13520 ويحتوي على 9 أرقام');
+                    return;
+                }
+                
+                const normalizedCode = gradeInfo.code;
+                const normalizedName = rawName;
+                
+                const existingExam = await db.collection('الامتحانات_اليومية')
+                    .where('الكود', '==', normalizedCode)
+                    .where('التاريخ', '==', today)
+                    .where('المادة', '==', todaySubject.code)
+                    .get();
+                
+                if (!existingExam.empty) {
+                    showLoader(false);
+                    showError('لقد أديت امتحان اليوم بالفعل!');
+                    return;
+                }
+                
+                let studentDoc = await db.collection('الطلاب')
+                    .where('الكود_المنظم', '==', normalizedCode)
+                    .limit(1)
+                    .get();
+                
+                if (!studentDoc.empty) {
+                    const studentData = studentDoc.docs[0].data();
+                    const similarity = nameSimilarity(studentData.الاسم, normalizedName);
+                    
+                    if (similarity < 80) {
+                        showLoader(false);
+                        showError(`الاسم لا يتطابق مع الكود المسجل. التشابه: ${Math.round(similarity)}%`);
+                        return;
+                    }
+                    
+                    currentStudent = {
+                        id: studentDoc.docs[0].id,
+                        ...studentData
+                    };
+                } else {
+                    const newStudent = {
+                        الكود: normalizedCode,
+                        الكود_المنظم: normalizedCode,
+                        الاسم: normalizedName,
+                        الاسم_المنظم: normalizedName.replace(/\s+/g, '_'),
+                        المرحلة: gradeInfo.gradeNumber,
+                        اسم_المرحلة: gradeInfo.gradeName,
+                        تاريخ_التسجيل: new Date(),
+                        إجمالي_الامتحانات: 0,
+                        إجمالي_النقاط: 0,
+                        آخر_نشاط: new Date(),
+                        تاريخ_الإنشاء: new Date()
+                    };
+                    
+                    const studentRef = await db.collection('الطلاب').add(newStudent);
+                    currentStudent = {
+                        id: studentRef.id,
+                        ...newStudent
+                    };
+                }
+                
+                const examRef = await db.collection('الامتحانات_اليومية').add({
+                    معرف_الطالب: currentStudent.id,
+                    الكود: normalizedCode,
+                    الاسم: normalizedName,
+                    التاريخ: today,
+                    المادة: todaySubject.code,
+                    اسم_المادة: todaySubject.name,
+                    المرحلة: gradeInfo.gradeNumber,
+                    اسم_المرحلة: gradeInfo.gradeName,
+                    الحالة: 'بدأ',
+                    وقت_البدء: new Date(),
+                    الإجابات: {},
+                    وقت_الإنشاء: new Date()
+                });
+                
+                examSessionId = examRef.id;
+                
+                await db.collection('الجلسات_النشطة').doc(currentStudent.id).set({
+                    معرف_الامتحان: examSessionId,
+                    معرف_الطالب: currentStudent.id,
+                    وقت_البدء: new Date(),
+                    آخر_نشاط: new Date(),
+                    السؤال_الحالي: 1,
+                    الإجابات: {},
+                    الوقت_المتبقي: timeLeft,
+                    تاريخ_الإنشاء: new Date()
+                }, { merge: true });
+                
+                showLoader(false);
+                startTimer();
+                renderExamScreen();
+                
+            } catch (error) {
+                showLoader(false);
+                showError('حدث خطأ: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        function renderExamScreen() {
+            const content = `
+                <div class="exam-header" style="background: linear-gradient(135deg, ${todaySubject.color}, ${todaySubject.color}88);">
+                    <div class="timer" id="timerDisplay">15:00</div>
+                    <div class="exam-info">
+                        <div class="exam-subject">${todaySubject.name}</div>
+                        <div class="exam-grade">${currentStudent.اسم_المرحلة}</div>
+                    </div>
+                </div>
+                
+                <div class="progress-dots">
+                    ${[1,2,3,4,5,6,7,8,9,10].map(num => `
+                        <div class="progress-dot ${answers[num] !== undefined ? 'answered' : ''} ${num === 1 ? 'current' : ''}">
+                            ${num}
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="question-container">
+                    <div class="question-number">السؤال 1 من 10</div>
+                    <div class="question-text">
+                        Zyad often ...... e-mails to his parents on the weekends.
+                    </div>
+                    
+                    <div class="options-container">
+                        <label class="option-label ${answers[1] === 0 ? 'selected' : ''}">
+                            <input type="radio" class="option-input" name="question_1" value="0"
+                                   ${answers[1] === 0 ? 'checked' : ''}
+                                   onchange="saveAnswer(1, 0)">
+                            <div class="option-text">
+                                <span class="option-letter">أ</span>
+                                <span class="option-content">sees</span>
+                            </div>
+                        </label>
+                        
+                        <label class="option-label ${answers[1] === 1 ? 'selected' : ''}">
+                            <input type="radio" class="option-input" name="question_1" value="1"
+                                   ${answers[1] === 1 ? 'checked' : ''}
+                                   onchange="saveAnswer(1, 1)">
+                            <div class="option-text">
+                                <span class="option-letter">ب</span>
+                                <span class="option-content">paints</span>
+                            </div>
+                        </label>
+                        
+                        <label class="option-label ${answers[1] === 2 ? 'selected' : ''}">
+                            <input type="radio" class="option-input" name="question_1" value="2"
+                                   ${answers[1] === 2 ? 'checked' : ''}
+                                   onchange="saveAnswer(1, 2)">
+                            <div class="option-text">
+                                <span class="option-letter">ج</span>
+                                <span class="option-content">sends</span>
+                            </div>
+                        </label>
+                        
+                        <label class="option-label ${answers[1] === 3 ? 'selected' : ''}">
+                            <input type="radio" class="option-input" name="question_1" value="3"
+                                   ${answers[1] === 3 ? 'checked' : ''}
+                                   onchange="saveAnswer(1, 3)">
+                            <div class="option-text">
+                                <span class="option-letter">د</span>
+                                <span class="option-content">ties</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="instructions">
+                    <div class="instructions-title">ملاحظة:</div>
+                    <ul class="instructions-list">
+                        <li>هذا نموذج تجريبي لعرض النظام</li>
+                        <li>في النظام الكامل سيكون هناك 20 سؤال لكل مادة</li>
+                        <li>يتم حفظ إجابتك تلقائياً عند اختيارها</li>
+                        <li>يمكنك العودة لتعديل إجابتك في أي وقت</li>
+                    </ul>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-warning" onclick="submitExam()">
+                        <span>🚀 إنهاء الامتحان (تجريبي)</span>
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('content').innerHTML = content;
+            updateTimerDisplay();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                
+                if (timeLeft % 30 === 0 && currentStudent) {
+                    updateSession();
+                }
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    submitExam();
+                }
+                
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const timerEl = document.getElementById('timerDisplay');
+            if (timerEl) {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft < 300) {
+                    timerEl.style.color = '#ff6b6b';
+                } else if (timeLeft < 600) {
+                    timerEl.style.color = '#ffa502';
+                }
+            }
+        }
+
+        function saveAnswer(questionId, answerIndex) {
+            answers[questionId] = answerIndex;
+            
+            if (currentStudent) {
+                db.collection('الجلسات_النشطة').doc(currentStudent.id).update({
+                    الإجابات: answers,
+                    آخر_نشاط: new Date()
+                }).catch(error => console.error('Error saving answer:', error));
+            }
+        }
+
+        async function updateSession() {
+            if (currentStudent) {
+                try {
+                    await db.collection('الجلسات_النشطة').doc(currentStudent.id).update({
+                        الوقت_المتبقي: timeLeft,
+                        آخر_نشاط: new Date(),
+                        الإجابات: answers
+                    });
+                } catch (error) {
+                    console.error('Error updating session:', error);
+                }
+            }
+        }
+
+        async function submitExam() {
+            clearInterval(timerInterval);
+            showLoader(true);
+            
+            try {
+                const score = 10;
+                const timeSpent = 15 * 60 - timeLeft;
+                const minutesSpent = Math.ceil(timeSpent / 60);
+                
+                let points = score;
+                points += calculateScoreBonus(score);
+                points += calculateTimeBonus(minutesSpent);
+                points += 1;
+                
+                await db.collection('الامتحانات_اليومية').doc(examSessionId).update({
+                    الحالة: 'منتهي',
+                    وقت_النهاية: new Date(),
+                    الوقت_المستغرق: timeSpent,
+                    الدرجة: score,
+                    النقاط: points,
+                    تفصيل_النقاط: {
+                        نقاط_الدرجة: score,
+                        مكافأة_الدرجة: calculateScoreBonus(score),
+                        مكافأة_السرعة: calculateTimeBonus(minutesSpent),
+                        نقطة_الحضور: 1,
+                        الإجمالي: points
+                    },
+                    الإجابات: answers,
+                    وقت_الإنتهاء: new Date()
+                });
+                
+                await db.collection('الطلاب').doc(currentStudent.id).update({
+                    إجمالي_الامتحانات: firebase.firestore.FieldValue.increment(1),
+                    إجمالي_النقاط: firebase.firestore.FieldValue.increment(points),
+                    آخر_نشاط: new Date(),
+                    آخر_امتحان: new Date()
+                });
+                
+                await updateDailyStats(score, points);
+                await updateMonthlyRanking(points);
+                
+                await db.collection('الجلسات_النشطة').doc(currentStudent.id).delete();
+                
+                showLoader(false);
+                showResults(score, points, timeSpent);
+                
+            } catch (error) {
+                showLoader(false);
+                showError('خطأ في إنهاء الامتحان: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        function calculateTimeBonus(minutesSpent) {
+            if (minutesSpent <= 5) return 3;
+            if (minutesSpent <= 10) return 2;
+            if (minutesSpent <= 15) return 1;
+            return 0;
+        }
+
+        function calculateScoreBonus(score) {
+            if (score === 10) return 2;
+            if (score >= 6) return 1;
+            return 0;
+        }
+
+        async function updateDailyStats(score, points) {
+            const subjectStatRef = db.collection('الإحصائيات_اليومية')
+                .doc(`${today}_${todaySubject.code}_إجمالي`);
+            
+            await db.runTransaction(async (transaction) => {
+                const doc = await transaction.get(subjectStatRef);
+                
+                if (doc.exists) {
+                    transaction.update(subjectStatRef, {
+                        عدد_الطلاب: firebase.firestore.FieldValue.increment(1),
+                        إجمالي_النقاط: firebase.firestore.FieldValue.increment(points),
+                        وقت_آخر_تحديث: new Date()
+                    });
+                } else {
+                    transaction.set(subjectStatRef, {
+                        التاريخ: today,
+                        المادة: todaySubject.code,
+                        اسم_المادة: todaySubject.name,
+                        عدد_الطلاب: 1,
+                        إجمالي_النقاط: points,
+                        وقت_الإنشاء: new Date()
+                    });
+                }
+            });
+        }
+
+        async function updateMonthlyRanking(points) {
+            const month = new Date().toISOString().slice(0, 7);
+            const rankingRef = db.collection('الترتيب_الشهري')
+                .doc(`${month}_${currentStudent.id}`);
+            
+            await db.runTransaction(async (transaction) => {
+                const doc = await transaction.get(rankingRef);
+                
+                if (doc.exists) {
+                    const currentData = doc.data();
+                    transaction.update(rankingRef, {
+                        النقاط_الإجمالية: currentData.النقاط_الإجمالية + points,
+                        آخر_تحديث: new Date()
+                    });
+                } else {
+                    transaction.set(rankingRef, {
+                        معرف_الطالب: currentStudent.id,
+                        اسم_الطالب: currentStudent.الاسم,
+                        المرحلة: currentStudent.المرحلة,
+                        الشهر: month,
+                        النقاط_الإجمالية: points,
+                        نقاط_الامتحانات: points - 3,
+                        مكافأة_السرعة: calculateTimeBonus(Math.ceil((15*60-timeLeft)/60)),
+                        نقاط_الحضور: 1,
+                        وقت_الإنشاء: new Date()
+                    });
+                }
+            });
+        }
+
+        async function showResults(score, points, timeSpent) {
+            const minutesSpent = Math.ceil(timeSpent / 60);
+            const month = new Date().toISOString().slice(0, 7);
+            
+            let rankingResult = await db.collection('الترتيب_الشهري')
+                .where('معرف_الطالب', '==', currentStudent.id)
+                .where('الشهر', '==', month)
+                .limit(1)
+                .get();
+            
+            let gradeRank = 'سيظهر غداً';
+            let schoolRank = 'سيظهر غداً';
+            
+            if (!rankingResult.empty) {
+                const rankingData = rankingResult.docs[0].data();
+                gradeRank = rankingData.الترتيب_في_المرحلة || 'سيظهر غداً';
+                schoolRank = rankingData.الترتيب_في_المدرسة || 'سيظهر غداً';
+            }
+            
+            const content = `
+                <div class="results-container">
+                    <div class="results-header">🎉 تم إنهاء الامتحان بنجاح!</div>
+                    
+                    <div class="result-card">
+                        <div class="result-item">
+                            <span class="result-label">👤 الاسم:</span>
+                            <span class="result-value">${currentStudent.الاسم}</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">📚 المادة:</span>
+                            <span class="result-value">${todaySubject.name}</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">⭐ الدرجة:</span>
+                            <span class="result-value highlight">${score}/10</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">⏱️ الوقت المستغرق:</span>
+                            <span class="result-value">${minutesSpent} دقيقة</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">🏆 النقاط المكتسبة:</span>
+                            <span class="result-value highlight">${points} نقطة</span>
+                        </div>
+                    </div>
+                    
+                    <div class="ranking-display">
+                        <div class="ranking-title">📊 ترتيبك الشهري</div>
+                        
+                        <div class="ranking-item">
+                            <div class="ranking-info">
+                                <div class="ranking-name">الترتيب في ${currentStudent.اسم_المرحلة}</div>
+                            </div>
+                            <div class="rank-number">${gradeRank}</div>
+                        </div>
+                        
+                        <div class="ranking-item">
+                            <div class="ranking-info">
+                                <div class="ranking-name">الترتيب في المدرسة</div>
+                            </div>
+                            <div class="rank-number">${schoolRank}</div>
+                        </div>
+                        
+                        <div style="text-align: center; margin-top: 20px;">
+                            <small style="color: var(--gray-dark);">
+                                يتم تحديث الترتيب يومياً في الساعة 2 صباحاً
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 40px;">
+                        <button class="btn" onclick="location.reload()" style="max-width: 300px; margin: 0 auto;">
+                            <span>🏠 العودة للرئيسية</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('content').innerHTML = content;
+        }
+
+        // ========== بدء النظام ==========
+        window.onload = function() {
+            initializeCollections();
+        };
+
+        window.addEventListener('beforeunload', function(e) {
+            if (timerInterval && timeLeft > 0) {
+                updateSession();
+                e.preventDefault();
+                e.returnValue = 'هل تريد مغادرة الامتحان؟ سيتم حفظ تقدمك الحالي.';
+            }
+        });
+
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && timerInterval) {
+                showInfo('تم اكتشاف تغيير التبويب! الرجاء التركيز في الامتحان.');
+            }
+        });
+    </script>
+</body>
+</html>
