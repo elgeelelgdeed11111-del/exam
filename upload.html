@@ -1,0 +1,1408 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>لوحة الإدارة - منصة الامتحانات</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* البطاقات الرئيسية */
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            animation: slideUp 0.5s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .card-header h2 {
+            color: #333;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .card-header h2 i {
+            color: #667eea;
+        }
+        
+        /* الأزرار */
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.2);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+        
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+        }
+        
+        .btn-sm {
+            padding: 8px 15px;
+            font-size: 14px;
+            width: auto;
+            margin: 0;
+        }
+        
+        /* شبكة الأزرار */
+        .grid-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        /* حقل البحث */
+        .search-box {
+            margin-bottom: 20px;
+        }
+        
+        .search-input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        /* نتائج البحث */
+        .search-results {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+        
+        .student-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            background: #f9f9f9;
+        }
+        
+        .student-item:last-child {
+            border-bottom: none;
+        }
+        
+        .student-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .student-name {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .student-code {
+            font-size: 12px;
+            color: #666;
+            font-family: monospace;
+            direction: ltr;
+        }
+        
+        .edit-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .edit-input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            width: 120px;
+            font-family: monospace;
+            direction: ltr;
+        }
+        
+        /* شريط التحميل */
+        .loading-bar {
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 2px;
+            margin: 10px 0;
+            display: none;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* رسائل التنبيه */
+        .alert {
+            padding: 15px;
+            border-radius: 12px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: 600;
+            animation: fadeIn 0.3s;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* المصفوفات */
+        .matrix-info {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        .matrix-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px dotted #dee2e6;
+        }
+        
+        /* التوست */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-size: 14px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+        }
+        
+        /* التبويبات */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            min-width: 80px;
+        }
+        
+        .tab.active {
+            background: white;
+            color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* قسم الإحصائيات */
+        .stats-card {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-radius: 15px;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+        
+        .stats-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        /* التجاوب مع الموبايل */
+        @media (max-width: 480px) {
+            .grid-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .search-input-container {
+                flex-direction: column;
+            }
+            
+            .student-item {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+            
+            .edit-controls {
+                flex-wrap: wrap;
+            }
+            
+            .edit-input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- التبويبات -->
+        <div class="tabs" id="tabs">
+            <div class="tab active" onclick="switchTab('students')">👥 الطلاب</div>
+            <div class="tab" onclick="switchTab('teachers')">👨‍🏫 المدرسين</div>
+            <div class="tab" onclick="switchTab('collections')">🗂️ الكوليكشنز</div>
+            <div class="tab" onclick="switchTab('settings')">⚙️ الإعدادات</div>
+        </div>
+        
+        <!-- شريط التحميل -->
+        <div class="loading-bar" id="loadingBar"></div>
+        
+        <!-- رسائل التنبيه -->
+        <div id="alertMessage"></div>
+        
+        <!-- تبويب الطلاب -->
+        <div id="tab-students" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i>👥</i> رفع الطلاب</h2>
+                </div>
+                
+                <!-- أزرار رفع كل مرحلة -->
+                <div class="grid-buttons">
+                    <button class="btn btn-success" onclick="uploadStudents('4')">رفع الصف الرابع</button>
+                    <button class="btn btn-success" onclick="uploadStudents('5')">رفع الصف الخامس</button>
+                    <button class="btn btn-success" onclick="uploadStudents('6')">رفع الصف السادس</button>
+                    <button class="btn btn-success" onclick="uploadStudents('7')">رفع الأول الإعدادي</button>
+                    <button class="btn btn-success" onclick="uploadStudents('8')">رفع الثاني الإعدادي</button>
+                </div>
+                
+                <!-- رفع يدوي -->
+                <button class="btn" onclick="manualUpload()">➕ إضافة طالب يدوي</button>
+                
+                <div class="card-header" style="margin-top: 20px;">
+                    <h2><i>🔍</i> تعديل كود طالب</h2>
+                </div>
+                
+                <!-- البحث عن طالب -->
+                <div class="search-box">
+                    <div class="search-input-container">
+                        <input type="text" class="search-input" id="searchName" placeholder="ابحث باسم الطالب...">
+                        <button class="btn btn-sm" onclick="searchStudent()">بحث</button>
+                    </div>
+                    <div id="searchResults" class="search-results"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- تبويب المدرسين -->
+        <div id="tab-teachers" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i>👨‍🏫</i> رفع المدرسين</h2>
+                </div>
+                
+                <button class="btn btn-warning" onclick="uploadTeachers()">🚀 رفع جميع المدرسين (25 كود)</button>
+                
+                <!-- مصفوفة المدرسين -->
+                <div class="matrix-info" id="teachersMatrix">
+                    <h3 style="margin-bottom: 10px;">مصفوفة المدرسين:</h3>
+                    <div class="matrix-item"><span>عربي:</span> <span>A4xxx, A5xxx, A6xxx, A7xxx, A8xxx</span></div>
+                    <div class="matrix-item"><span>إنجليزي:</span> <span>E4xxx, E5xxx, E6xxx, E7xxx, E8xxx</span></div>
+                    <div class="matrix-item"><span>رياضيات:</span> <span>M4xxx, M5xxx, M6xxx, M7xxx, M8xxx</span></div>
+                    <div class="matrix-item"><span>علوم:</span> <span>S4xxx, S5xxx, S6xxx, S7xxx, S8xxx</span></div>
+                    <div class="matrix-item"><span>دراسات:</span> <span>D4xxx, D5xxx, D6xxx, D7xxx, D8xxx</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- تبويب الكوليكشنز -->
+        <div id="tab-collections" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i>🗂️</i> إنشاء الكوليكشنز</h2>
+                </div>
+                
+                <button class="btn btn-info" onclick="createAllCollections()">🛠️ إنشاء جميع الكوليكشنز</button>
+                
+                <div class="matrix-info">
+                    <h3 style="margin-bottom: 10px;">الكوليكشنز التي سيتم إنشاؤها:</h3>
+                    <div class="matrix-item">📚 students</div>
+                    <div class="matrix-item">👨‍🏫 teachers</div>
+                    <div class="matrix-item">📝 exams</div>
+                    <div class="matrix-item">📊 results</div>
+                    <div class="matrix-item">🏆 monthlyRanking</div>
+                    <div class="matrix-item">⚙️ settings</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- تبويب الإعدادات -->
+        <div id="tab-settings" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i>⚙️</i> إعدادات النظام</h2>
+                </div>
+                
+                <button class="btn" onclick="initSettings()">🔧 تهيئة الإعدادات الافتراضية</button>
+                <button class="btn btn-danger" onclick="showStats()">📊 عرض إحصائيات عامة</button>
+            </div>
+            
+            <!-- قسم الإحصائيات -->
+            <div class="card" id="statsCard" style="display: none;">
+                <div class="card-header">
+                    <h2><i>📊</i> إحصائيات سريعة</h2>
+                </div>
+                <div id="statsContent"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- توست للإشعارات -->
+    <div class="toast" id="toast">تم بنجاح</div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // استيراد مكتبات Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            setDoc, 
+            getDocs, 
+            query, 
+            where,
+            writeBatch,
+            deleteDoc,
+            updateDoc
+        } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+        // إعدادات Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyB27lyphN9YxgB4eFwuKWi0ghjuAutpu8o",
+            authDomain: "manssa-oloom1352007.firebaseapp.com",
+            projectId: "manssa-oloom1352007",
+            storageBucket: "manssa-oloom1352007.firebasestorage.app",
+            messagingSenderId: "191595591961",
+            appId: "1:191595591961:web:79ff9bbb52cc08cb862d88",
+            measurementId: "G-B57GFGNW3B"
+        };
+
+        // تهيئة Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // ==================== بيانات الطلاب ====================
+        const studentsData = {
+            '4': [
+                { name: "احمد ايمن سيد يونس", code: "A247820" },
+                { name: "أحمد محمد سيد محمود", code: "A191726" },
+                { name: "أحمد محمد عبود عباس", code: "A203951" },
+                { name: "آدم أحمد محمد حسن", code: "A361159" },
+                { name: "ادم محمد عادل الشيمى عشماوى", code: "A824930" },
+                { name: "آدم ياسر ناصر محمد", code: "A217992" },
+                { name: "اسر احمد عبد النبي مصطفي", code: "A878837" },
+                { name: "آسر سالم عبد المنعم سالم", code: "A550304" },
+                { name: "أنس عبد الجواد البدرى فهمي", code: "A686477" },
+                { name: "جاسم أحمد سعيد علي", code: "A879220" },
+                { name: "جمال إبراهيم جمال عبد القادر", code: "A258192" },
+                { name: "حسن صبري حسن ابراهيم", code: "A508980" },
+                { name: "حمزة محمود عطاالله محمد", code: "A462007" },
+                { name: "حمزه ايمن خلف السيد", code: "A617255" },
+                { name: "حمزه سيد عبد المحسن السيد", code: "A205013" },
+                { name: "حمزه عمرو رفيق سيد", code: "A811124" },
+                { name: "حمزه عمرو محمود علي عرفه", code: "A857518" },
+                { name: "حمزه محمد مصطفي أحمد", code: "A294460" },
+                { name: "خالد محمود خالد حسين", code: "A858638" },
+                { name: "سليم إسلام جمعة محمود", code: "A730551" },
+                { name: "سمير محمد سمير محمد", code: "A603151" },
+                { name: "عبد العاطى احمد عبد العاطي علي", code: "A246377" },
+                { name: "عبدالرحمن سامح عبدالنبى ابوالحديد", code: "A795439" },
+                { name: "عبدالرحمن هانى زهران السيد", code: "A405719" },
+                { name: "عصام عصام عبد ربه محمد", code: "A476263" },
+                { name: "علي حسين علي حسن علي", code: "A304461" },
+                { name: "عمر تامر عبد النبي سعد", code: "A852941" },
+                { name: "عمر عبد العليم علاء عبد العليم", code: "A520483" },
+                { name: "عمر محمد أحمد أبو اليمين", code: "A676082" },
+                { name: "عمر محمد سيد هشام", code: "A995474" },
+                { name: "عوض اسلام عوض علي", code: "A136866" },
+                { name: "كاراس ثروت عبد النور صليب", code: "A630473" },
+                { name: "كامل صدام كامل حسين", code: "A707322" },
+                { name: "كيرلس جرجس رزق إبراهيم", code: "A105494" },
+                { name: "مالك أحمد السيد عبد الحليم", code: "A557695" },
+                { name: "مالك أحمد محمد محمود", code: "A327469" },
+                { name: "مالك إسلام صابر سعد", code: "A862281" },
+                { name: "مالك رضا عزوز محمد", code: "A207538" },
+                { name: "مالك رضوان عبد الله محمد", code: "A696961" },
+                { name: "مالك محمود زغلول حميدة", code: "A220289" },
+                { name: "مالك مصطفي فتحي الششتاوي", code: "A203974" },
+                { name: "محمد أشرف محمد طه", code: "A862228" },
+                { name: "محمد تامر رشاد علي", code: "A788402" },
+                { name: "محمد عادل عبد الرحمن عبد العليم", code: "A670831" },
+                { name: "محمد عادل محمد جمعه", code: "A514809" },
+                { name: "محمد عبد الله سراج الدين مرسي", code: "A624886" },
+                { name: "محمد عصام حمزه علي", code: "A768753" },
+                { name: "محمد عماد السيد مكاوى", code: "A402765" },
+                { name: "محمد عماد رمضان همام", code: "A291401" },
+                { name: "محمد عمرو محمد عبد المهيمين", code: "A635328" },
+                { name: "محمد محمد عبدالتواب محمد", code: "A353612" },
+                { name: "مروان أحمد عادل عطيه", code: "A463338" },
+                { name: "مروان محمد رمضان علي", code: "A594275" },
+                { name: "مصطفي محمد السيد عطيه", code: "A307381" },
+                { name: "مؤمن محمد عبد اللطيف مرسي", code: "A491118" },
+                { name: "نور سمير مدحت محمود", code: "A562944" },
+                { name: "ياسين عبد الرحمن هاشم رمضان", code: "A510784" },
+                { name: "ياسين محمد جابر عبد الرحمن", code: "A348817" },
+                { name: "ياسين محمد عثمان تمام", code: "A693282" },
+                { name: "يوسف محمد مجدي عبد الرحمن", code: "A218222" },
+                { name: "اسيل محمدى منصور محمد", code: "A755683" },
+                { name: "بتول رومانى حمدى بخيت", code: "A753203" },
+                { name: "تالين محمود صفوت السيد", code: "A122822" },
+                { name: "تقى زكريا حمزة محمد", code: "A811880" },
+                { name: "جودى احمد محى الدين امام", code: "A494012" },
+                { name: "جودى سيد منصور سيد", code: "A194903" },
+                { name: "جودي عبد الوهاب وجدي", code: "A335727" },
+                { name: "حبيبة محمد مصطفي محمد", code: "A874692" },
+                { name: "ديما شهاب مرزوق محمد", code: "A919449" },
+                { name: "رقيه محمد رضا على", code: "A482391" },
+                { name: "رنا اسماعيل الشامى مصطفى", code: "A640862" },
+                { name: "رودين محمد نبيل مختار", code: "A108957" },
+                { name: "رودينا على سنوسى سيد", code: "A348992" },
+                { name: "روضة كريم احمد امين", code: "A478161" },
+                { name: "ريتاج هانى شعبان السنوسى", code: "A472239" },
+                { name: "ريتال معتز بالله محمد على احمد", code: "A526023" },
+                { name: "ريتال ممدوح محمد ابراهيم", code: "A741336" },
+                { name: "زينة أحمد علي عمر", code: "A965076" },
+                { name: "سبأ علي إسماعيل عبدالمنعم", code: "A108965" },
+                { name: "سجده ايمن سيد يونس", code: "A137247" },
+                { name: "سجده وليد محمد محمد", code: "A566541" },
+                { name: "سلمى امام محمد امام", code: "A833858" },
+                { name: "سهيلة احمد صابر عبد العليم", code: "A919099" },
+                { name: "شادية عبد المنعم عادل عبد المنعم", code: "A992938" },
+                { name: "شمس محمد رفيق سيد علي", code: "A834684" },
+                { name: "فاطمة محمود ابراهيم محمد", code: "A861008" },
+                { name: "فاطمه حسين نصر حسين", code: "A998745" },
+                { name: "فريدة زكريا جلال حسن", code: "A537857" },
+                { name: "فريدة عبد اللطيف عيد عبد اللطيف", code: "A857257" },
+                { name: "فريدة محمد محمد مصطفي", code: "A201356" },
+                { name: "كارما كريم محمود عبد العزيز", code: "A843546" },
+                { name: "كنزي يسري علي فرج", code: "A849586" },
+                { name: "كوثر مصطفي عبد المحسن عبد اللطيف", code: "A184282" },
+                { name: "مريم حسين محمد عادل", code: "A621726" },
+                { name: "مريم محمود سراج الدين مرسي", code: "A400357" },
+                { name: "مريم مصطفي إسماعيل عبد اللطيف", code: "A669059" },
+                { name: "مكه رامى محمد شحاتة", code: "A108647" },
+                { name: "مكه عزمي عزمي محمد", code: "A361059" },
+                { name: "ملك أشرف جمعة محمد", code: "A947708" },
+                { name: "ملك عمرو فتحي عبد السميع", code: "A705857" },
+                { name: "مليكه خالد علي أحمد", code: "A771438" },
+                { name: "ندي سيد معوض عبد الشفيع", code: "A255533" },
+                { name: "هداية محمود مصلح فاروق", code: "A239933" },
+                { name: "وسيلة محمد حسنين حسين", code: "A996265" },
+                { name: "وعد محمد ناجي حسين", code: "A795954" },
+                { name: "ياسمين أحمد هلال", code: "A196479" }
+            ],
+            
+            '5': [
+                { name: "احمد ثابت محمد ابوزيد محمد", code: "B196657" },
+                { name: "ادم محمود فرج صابر شفيع", code: "B550497" },
+                { name: "ادهم محمود صفوت السيد", code: "B932909" },
+                { name: "زياد ايمن حسنى سيد احمد صالح", code: "B298821" },
+                { name: "زياد عمرو محمد امام السيد", code: "B804206" },
+                { name: "سيد ناصر سيد عبدالعزيز", code: "B208498" },
+                { name: "عبدالله سيد عبدالحميد محمد عبدالحميد", code: "B657411" },
+                { name: "عبدالله على محمد فرحات حسن", code: "B381320" },
+                { name: "عدي عبد العليم علاء عبد العليم", code: "B808729" },
+                { name: "علي محمد كمال محمد", code: "B193477" },
+                { name: "علي خالد علي محمود", code: "B785995" },
+                { name: "عمر محمد رمضان عيد ابورواش", code: "B942517" },
+                { name: "فارس احمد فارس", code: "B647445" },
+                { name: "فام روماني فام اسحق", code: "B685059" },
+                { name: "فهد محمد عربي", code: "B208635" },
+                { name: "محمد احمد فرج صابر شنيع", code: "B996581" },
+                { name: "محمد جمال محمد عبداللاه عبدالعال", code: "B220940" },
+                { name: "محمد رافت عبدالرؤو احمد", code: "B998673" },
+                { name: "محمد عيد عزام ابوالمحاسن ابراهيم", code: "B987231" },
+                { name: "محمد هشام شعبان محجوب", code: "B291477" },
+                { name: "محمد محمود محمد احمد محمد", code: "B636966" },
+                { name: "مدثر رضا عزوز محمد", code: "B158720" },
+                { name: "مصطفى غريب مرسى غريب مرسى", code: "B711255" },
+                { name: "هلال أحمد هلال", code: "B718627" },
+                { name: "ياسين عمرو احمد حسين", code: "B339419" },
+                { name: "ياسين محمد جلال السيد محمد", code: "B454726" },
+                { name: "ياسين محمد ربيع عبدالفتاح السيد", code: "B998649" },
+                { name: "ياسين محمود سعيد خليفه فرغلى", code: "B752076" },
+                { name: "يس محمد اسامه متولى فرج", code: "B577585" },
+                { name: "يوسف ايمن الشامى مصطفى عبدالحافظ", code: "B175932" },
+                { name: "يوسف حسين صلاح احمد ابوالعلا", code: "B970259" },
+                { name: "يوسف سامح عبد الوهاب عبد الله", code: "B180144" },
+                { name: "يوسف طارق مجدى منصور مصطفى", code: "B426929" },
+                { name: "يوسف ياسر عبدالمنعم رجب اسماعيل", code: "B845848" },
+                { name: "اميره سويفى حسن احمد على", code: "B944400" },
+                { name: "جاسمين محمد رمضان فريد ابراهيم", code: "B137249" },
+                { name: "جنات سمير عبده محمود الراشدى", code: "B360455" },
+                { name: "جنه ناجى احمد نجيب الجبلاوى", code: "B364552" },
+                { name: "جودي حسام عبد العزيز", code: "B589100" },
+                { name: "جودى عاشور رمضان عبدالمجيد احمد", code: "B303772" },
+                { name: "جودى علاء الدين فتحى على محمد", code: "B740440" },
+                { name: "دانا محمد صلاح محمود محمد", code: "B598604" },
+                { name: "رحمه محمود ربيع مصطفى حماد", code: "B452243" },
+                { name: "رقيه وليد محمد سيد", code: "B121309" },
+                { name: "روميساء طه اسماعيل محمد عبدالله", code: "B108419" },
+                { name: "ريتال محمد اسماعيل شوقى اسماعيل", code: "B943327" },
+                { name: "ريماس احمد سيد على جمعه رضوان", code: "B299741" },
+                { name: "ريماس ايمن فوزى جرجس بشاى", code: "B474615" },
+                { name: "ريناد احمد على احمد على", code: "B576042" },
+                { name: "ريناد عبدالعزيز محمد عبدالعزيز حجازى", code: "B494221" },
+                { name: "زينب احمد عبدالوهاب محمود عبدالرحيم", code: "B968470" },
+                { name: "ساندى محمد على عبدالحكيم دياب", code: "B520570" },
+                { name: "ساندى محمد محمد نصر ابراهيم", code: "B988386" },
+                { name: "سجدة انور حامد محمد سيد", code: "B618192" },
+                { name: "سجده على صابر على عبدالحميد", code: "B208625" },
+                { name: "سهام عبدالحفيظ فتحى عبدالحفيظ", code: "B779469" },
+                { name: "سهيله محمد خالد هاشم", code: "B181200" },
+                { name: "شهد هانى ناصر عبدالظاهر عبدالرحمن", code: "B647266" },
+                { name: "فاطمة علاء عبد العليم", code: "B559314" },
+                { name: "فردوس عباس كرم عباس", code: "B671206" },
+                { name: "فريدة مصطفى محمد سعد حجاج", code: "B264568" },
+                { name: "فريده اشرف حسين محمد حبيب", code: "B548044" },
+                { name: "لمار ياسر سيد حسنى حسان", code: "B540011" },
+                { name: "لوجين محمد احمد ادم موسى", code: "B102123" },
+                { name: "مايا ابراهيم محمود عبدالخالق محمد", code: "B572758" },
+                { name: "مريم تامر ابورواش محمد عبدالمقصود", code: "B503792" },
+                { name: "مرام عادل محمد جمعة", code: "B335517" },
+                { name: "مريم محمود على محمد بشندى", code: "B945978" },
+                { name: "مريم محمود محمد عبدالمنعم حسنين", code: "B661704" },
+                { name: "منه وليد وليد ابراهيم رجب", code: "B401504" },
+                { name: "ندى احمد حسين حسن عبدالرحمن", code: "B107285" },
+                { name: "نغم احمد محمد الشحات عبدالفتاح", code: "B662759" },
+                { name: "همس اسلام محمد عبدالحكيم محمد", code: "B494861" },
+                { name: "هنا تامر سعيد اسماعيل", code: "B718993" },
+                { name: "وعد محمد السيد محمود على", code: "B790445" }
+            ],
+            
+            '6': [
+                { name: "ابراهيم كمال رمزى ابراهيم صالح", code: "C637590" },
+                { name: "احمد محمود احمد محمد عبدالراضى", code: "C842159" },
+                { name: "آدم محمد مغربى محمد سعد", code: "C553156" },
+                { name: "ادهم محمد محمود يونس الدكرورى", code: "C304980" },
+                { name: "اسر احمد رجب محمد محمد القزازى", code: "C416644" },
+                { name: "انس احمد صابر عبدالعليم", code: "C853447" },
+                { name: "انس ايمن سيد محمد", code: "C727132" },
+                { name: "جون ميلاد انيس عريان واصف", code: "C841807" },
+                { name: "حاتم محمد السيد محمود على", code: "C619642" },
+                { name: "حمزة الوليد جابر على محمد", code: "C101454" },
+                { name: "حمزه تمام عثمان تمام محمد", code: "C913518" },
+                { name: "حمزه محمد خالد هاشم العبد الكاشف", code: "C373389" },
+                { name: "زياد خالد غريب محمد السيد زهران", code: "C845360" },
+                { name: "سيف ابراهيم عادل", code: "C717892" },
+                { name: "سيف بهاء الدين صبحي", code: "C789158" },
+                { name: "طه مرسي احمد مرسي", code: "C407836" },
+                { name: "عبدالرحمن محمد احمد ابواليمين البكرى", code: "C271626" },
+                { name: "على عبدالعاطى احمد محمد درويش", code: "C208862" },
+                { name: "عماد عيد احمد مبروك حافظ", code: "C187912" },
+                { name: "عمار احمد شعبان محمد ابراهيم", code: "C536444" },
+                { name: "عمر احمد على عبدالعال قاسم", code: "C463621" },
+                { name: "عمر عمرو محمد السيد الدمرداش", code: "C575614" },
+                { name: "كاراس نادر انيس عريان", code: "C540005" },
+                { name: "كريم حسن عزوز حسن عبدالعزيز", code: "C964099" },
+                { name: "مازن شعبان سعودي علي", code: "C166892" },
+                { name: "مازن هانى مصطفى اسماعيل السيد", code: "C493789" },
+                { name: "مالك تامر كمال الدين يوسف احمد", code: "C327527" },
+                { name: "مالك محمد مصطفى إسماعيل", code: "C504784" },
+                { name: "محمد اشرف بدوي عبد الله", code: "C591302" },
+                { name: "محمد تقادم محمد عبدالنعيم يعقوب", code: "C657875" },
+                { name: "محمد ربيع حلمى عبدالمنعم عبدالعزيز", code: "C833035" },
+                { name: "محمد على محمد على احمد القاضى", code: "C926788" },
+                { name: "محمد محمود داهش", code: "C407877" },
+                { name: "محمود عبد الهادي محمود احمد", code: "C634501" },
+                { name: "مختار خالد مختار عبدالحميد على", code: "C655442" },
+                { name: "مروان عمرو سعيد سعيد حنفى", code: "C524610" },
+                { name: "معتز عادل عبد الرحمن عبد العليم", code: "C119247" },
+                { name: "معتز محمد صلاح احمد ابوالعلا", code: "C952719" },
+                { name: "ياسين احمد عنتر هاشم محمدين", code: "C406301" },
+                { name: "ياسين جابر عبدالرحيم جابر ابوزيد", code: "C547272" },
+                { name: "ياسين محمد رجب عباس", code: "C944010" },
+                { name: "يزيد مختار لبيب محمود", code: "C461758" },
+                { name: "يوساب سامح روفائيل حكيم بخيت", code: "C492226" },
+                { name: "يوسف احمد جمال الدين يوسف يعقوب", code: "C536783" },
+                { name: "يوسف احمد عبد النبي مصطفي", code: "C401775" },
+                { name: "يوسف السيد احمد محمد عبدالراضى", code: "C139881" },
+                { name: "يوسف ثابت محمد ابوزيد محمد", code: "C327474" },
+                { name: "يوسف شعبان سعودي علي", code: "C785129" },
+                { name: "اسيل حسام الدين عبدالناصر سيد سيد", code: "C359375" },
+                { name: "اميره محمود يونس شحاته", code: "C848901" },
+                { name: "ايلاريا طلعت نبيل جيد يوسف", code: "C845249" },
+                { name: "ايمى سيد عبدالرحيم السايح جمال", code: "C619867" },
+                { name: "بسمله محمد احمد ابواليمين البكرى", code: "C248946" },
+                { name: "تقى محمد على توفيق محمد", code: "C272672" },
+                { name: "جنه عبد الغني مرسي عبد الغني", code: "C179029" },
+                { name: "جنى فتحى عبدالعزيز عباس السيد", code: "C756079" },
+                { name: "جنى محمود عبدالعزيز عبدالحليم خطاب", code: "C174768" },
+                { name: "جودى احمد بهاء عبدالغفار عبدالهادى", code: "C215149" },
+                { name: "جودى سيد عبدالله سيد عبدالقادر", code: "C138535" },
+                { name: "جميلة خالد علي محمود", code: "C937931" },
+                { name: "حبيبه احمد صلاح احمد محمد", code: "C729850" },
+                { name: "حبيبه علاء عمر احمد محمد", code: "C938360" },
+                { name: "حلا سامي احمد محمد", code: "C339473" },
+                { name: "حنين احمد يوسف حسن عبدالحليم", code: "C671090" },
+                { name: "حنين عبدالرحمن عبداللطيف ابراهيم احمد", code: "C966827" },
+                { name: "ديمه سالم عبدالمنعم سالم علي", code: "C961990" },
+                { name: "رحمة محمد فهمي", code: "C434949" },
+                { name: "روقيه محمد فاروق ابراهيم محمد سالم", code: "C716975" },
+                { name: "روان محمد عبدالقادر عبدالحليم رحيم", code: "C410114" },
+                { name: "رودينا احمد عبدالستار عبدالجابر عبدالامام", code: "C580094" },
+                { name: "ريتاج عمرو عبدالحميد محمد فهيم النحال", code: "C446399" },
+                { name: "ريتاج وليد احمد محمد محمود", code: "C749862" },
+                { name: "ريماس محمود عنتر هاشم محمدين", code: "C380047" },
+                { name: "ريماس وليد سعد محمد", code: "C780337" },
+                { name: "ريناد احمد سعيد على", code: "C999625" },
+                { name: "ساندى عاصم عبدالله سيد عبدالقادر", code: "C414846" },
+                { name: "ساندى محمد طلعت ابراهيم احمد", code: "C577417" },
+                { name: "سجده محمود صلاح احمد محمد", code: "C400068" },
+                { name: "شهد محمود فتحى عبدالعزيز بيومى", code: "C987030" },
+                { name: "عزه احمد صبحى عبده الضاوى", code: "C904689" },
+                { name: "فريده احمد محمد ابراهيم محمد", code: "C252630" },
+                { name: "لبنى عبد الحليم السيد عبد الحليم", code: "C436177" },
+                { name: "مريم شريف صلاح احمد عبدالحميد", code: "C914849" },
+                { name: "مريم عصام عادل عبد المنعم", code: "C678482" },
+                { name: "مريم محمد صالح حسين صالح", code: "C427010" },
+                { name: "نور عامر احمد عبدالرحيم هريدى", code: "C700414" },
+                { name: "يارا محمد عبدالفتاح محمد المصرى", code: "C410783" },
+                { name: "يمني حازم شعبان جعفر", code: "C327103" },
+                { name: "يمنى هشام ابورواش محمد محمد الاشقر", code: "C724391" }
+            ],
+            
+            '7': [
+                { name: "احمد غريب محمد احمد عمران احمد", code: "D443446" },
+                { name: "احمد محمد محروس عبد العظيم", code: "D654926" },
+                { name: "آدم ابراهيم ابوالعلا ابراهيم حسن", code: "D315599" },
+                { name: "ادم رمضان عبدالمنعم محمد حسن", code: "D742266" },
+                { name: "ادم ياسر فوزى حسن شمروخ", code: "D600622" },
+                { name: "ادهم صبرى حسن ابراهيم السيد", code: "D845076" },
+                { name: "انس رفاعى حسنى على سيد", code: "D847139" },
+                { name: "انس محمد محمد مصطفى السعيد", code: "D186773" },
+                { name: "انس محمدى منصور محمد منصور", code: "D429736" },
+                { name: "اياد هشام رافت احمد قناوى", code: "D626033" },
+                { name: "توفيق مراد احمد مراد حسين", code: "D793429" },
+                { name: "حازم حسن فتحى عوض درويش", code: "D779236" },
+                { name: "حسن محمد فاروق محمد قاسم", code: "D155350" },
+                { name: "ديفيد رفعت راتب عبدالسيد بشوت", code: "D454581" },
+                { name: "زياد ايمن سيد يونس", code: "D797218" },
+                { name: "زياد عصام احمد عبدالله حسين", code: "D622723" },
+                { name: "زياد علي سنوسي سيد", code: "D346491" },
+                { name: "زياد عمرو حسين محمد حافظ زغله", code: "D646977" },
+                { name: "زياد كمال رمزى ابراهيم صالح", code: "D417469" },
+                { name: "زياد هانى زهران السيد زهران", code: "D796161" },
+                { name: "سليم ايمن فاروق حسن", code: "D726903" },
+                { name: "عادل عصام محمد", code: "D695196" },
+                { name: "عبدالرحمن محمد عبدالتواب محمد مرسى خليل", code: "D581056" },
+                { name: "عبدالرحمن محمد فتحى محمد محمد", code: "D860032" },
+                { name: "عبدالله عماد عشرى احمد سيد", code: "D762959" },
+                { name: "عبدالله محمد الغنام محمد محمود", code: "D889035" },
+                { name: "عزام كحلاوى عزام ابوالمحاسن", code: "D605347" },
+                { name: "عمر محمود محمد احمد محمد", code: "D651367" },
+                { name: "فارس ياسر برعي عمر محمد", code: "D487503" },
+                { name: "كريم محمود محمد عبدالباسط", code: "D108733" },
+                { name: "كريم بهاء الدين صبحي", code: "D915771" },
+                { name: "مازن احمد محمد محمود احمد هنداوى", code: "D222226" },
+                { name: "مازن محمد جمال امام خليل", code: "D931344" },
+                { name: "مالك حمدى محمود خليل بشير", code: "D952158" },
+                { name: "مجدي محمد مجدي عبد الرحمن", code: "D862761" },
+                { name: "محمد ايمن مجدى عباس محمد محمود", code: "D592879" },
+                { name: "محمد سعيد حجة الدين عبدالفتاح محمد", code: "D301068" },
+                { name: "محمد سيد عبد النبي رمضان", code: "D555991" },
+                { name: "محمد معتز بالله محمد على احمد", code: "D344359" },
+                { name: "محمد يسرى على فرج ندا قنديل", code: "D153880" },
+                { name: "محمود ابراهيم محمود عبدالخالق", code: "D756766" },
+                { name: "مروان لطفى حسنى رضا احمد", code: "D818868" },
+                { name: "مهاب على سيد على احمد غزال", code: "D642306" },
+                { name: "ياسين محمد السيد حسانين", code: "D169828" },
+                { name: "يوسف عبد الوهاب محمد", code: "D253090" },
+                { name: "يوسف كريم احمد امين", code: "D787496" },
+                { name: "يسى رومانى فام اسحق فام", code: "D960188" },
+                { name: "اريك ابورواش محمد ابوراش محمد", code: "D128901" },
+                { name: "اسيل محمد طه اسماعيل محمد", code: "D505796" },
+                { name: "ايمان احمد محسن عطية", code: "D307332" },
+                { name: "ايه محمد فخري محمد", code: "D877319" },
+                { name: "بسملة احمد الطيب على احمد", code: "D667084" },
+                { name: "بسمله محمد ابراهيم حسن حسان على", code: "D827767" },
+                { name: "بسمه ناجى احمد نجيب الجبلاوى", code: "D991955" },
+                { name: "جنى عرفه عبدالراضي هريدي", code: "D153921" },
+                { name: "جنى علاء الدين فتحى على محمد العشرى", code: "D761790" },
+                { name: "جنى علام محمد علام يوسف", code: "D375986" },
+                { name: "جودي محمد داهش عبد الخير", code: "D618009" },
+                { name: "جويس عاطف رمزى تادرس شحاته", code: "D218103" },
+                { name: "حنين وليد ابراهيم رجب محمد", code: "D374604" },
+                { name: "رقيه مجدى صابر محمد اسحاق", code: "D574047" },
+                { name: "رقيه عمرو محمد مرسى جمعه", code: "D597730" },
+                { name: "رقية مجدي صابر محمد اسحاق", code: "D720804" },
+                { name: "روان على امام محمد عيسي", code: "D345579" },
+                { name: "رودينا ايمن سيد يونس", code: "D978141" },
+                { name: "رودينا محمد سيد هشام ابراهيم", code: "D654218" },
+                { name: "رؤيه محمد نصر عبدالراضى عبدالهادى", code: "D368733" },
+                { name: "ريتاج محمد فوزى محمد صبره", code: "D996451" },
+                { name: "ريتاج محمود ابراهيم محمود احمد", code: "D664246" },
+                { name: "ريتال سيد حسن احمد", code: "D532578" },
+                { name: "ريتال محمد احمد ابو سريع", code: "D832761" },
+                { name: "ريتال محمد نبيل مختار عبدالرحمن", code: "D912817" },
+                { name: "ريماس رمضان معوض رمضان المعدلى", code: "D780614" },
+                { name: "زمزم موسى عيد بكر ابوالسعود", code: "D706538" },
+                { name: "سجى سيد منصور سيد", code: "D659224" },
+                { name: "سما ابوالعلا رمضان فريد ابراهيم", code: "D829891" },
+                { name: "سندس محمد علي احمد", code: "D316412" },
+                { name: "شهد احمد محى الدين امام ابراهيم", code: "D871141" },
+                { name: "عائشه يسرى عمر عبدالعال جعفر", code: "D251806" },
+                { name: "فريده هشام محمد محمد عثمان", code: "D377438" },
+                { name: "لوجى سيد نصر عبدالراضى عبدالهادى", code: "D311209" },
+                { name: "مروه اشرف محمدى عيد ابورواش", code: "D871518" },
+                { name: "مريم علاء الدين محمد ابورواش محمد", code: "D205316" },
+                { name: "ملك محمود حسن عبدالله احمد", code: "D174211" },
+                { name: "منه احمد طاهر محمد طلعت", code: "D294041" },
+                { name: "مهرائيل ثروت عبدالنور صليب", code: "D937941" },
+                { name: "ندى غريب مرسى غريب مرسى", code: "D559223" },
+                { name: "نور سامح عفيفى حسب النبى بدوى", code: "D136104" },
+                { name: "نورين الوليد جابر على محمد بيومى", code: "D296132" },
+                { name: "هنا عماد محمد مصطفى محمد", code: "D265951" }
+            ],
+            
+            '8': [
+                { name: "احمد السيد احمد محمد", code: "E861010" },
+                { name: "احمد حسين محمد جوده عمر", code: "E645076" },
+                { name: "احمد محمد فؤاد حافظ", code: "E837290" },
+                { name: "احمد محمد محمد نصر ابراهيم", code: "E157247" },
+                { name: "احمد وليد احمد محمد محمود", code: "E988578" },
+                { name: "أدم حسين محمد جوده عمر", code: "E386081" },
+                { name: "ادهم عادل محروس عراقى كيلانى", code: "E454737" },
+                { name: "اسلام احمد رمضان عبدالعزيز محمد", code: "E590065" },
+                { name: "اشرف ايمن فؤاد محمد عبدالله", code: "E734924" },
+                { name: "ايمن ياسر خميس منصور", code: "E457520" },
+                { name: "بلال عبدالجواد البدرى فهمى ابراهيم", code: "E425719" },
+                { name: "جاسر اشرف محمد امين السيد خليل", code: "E692769" },
+                { name: "جاسر امام عبدالله سيد عبدالقادر", code: "E966066" },
+                { name: "جلال محمد جلال ابراهيم", code: "E986733" },
+                { name: "جمال اسامه محمد محمود ربابه", code: "E847707" },
+                { name: "حازم محمد كامل حسين", code: "E313898" },
+                { name: "خالد هشام محمد عبود محمد", code: "E453176" },
+                { name: "زياد طارق احمد عبيد عبدالمقصود", code: "E795064" },
+                { name: "زياد طارق سيد محمود نافع", code: "E194654" },
+                { name: "زياد علاء سعد مبارك على حسن", code: "E868417" },
+                { name: "سيف محمد رمضان فريد ابراهيم", code: "E994228" },
+                { name: "عبدالرحمن اسماعيل السعيد محمد رضوان", code: "E652524" },
+                { name: "عبدالرحمن عمرو البغدادي مصطفي", code: "E750902" },
+                { name: "عبدالرحمن محمد عبدالرحمن حسن حسين", code: "E701012" },
+                { name: "عبدالرحمن مصطفى فتحى الششناوى احمد مسعود", code: "E996869" },
+                { name: "عبدالله محمود محمد حامد", code: "E540201" },
+                { name: "عبدالله مصطفى عبدالحميد محمد على", code: "E356005" },
+                { name: "عبدالله هشام شعبان محجوب ابراهيم", code: "E684126" },
+                { name: "علي كريم علي سلامة", code: "E471301" },
+                { name: "عمر محمود محمد عبدالحفيظ", code: "E367014" },
+                { name: "عمر هانى شعبان السنوسى عطيه", code: "E866613" },
+                { name: "عمرو محمد رمضان على منصور", code: "E540115" },
+                { name: "فادى زاهى شكرى رزيق سعيد", code: "E646415" },
+                { name: "فارس هشام عبدالله سيد", code: "E141893" },
+                { name: "كاراس داود جرجس ذكى داود", code: "E500499" },
+                { name: "كاراس ميلاد ناشد", code: "E717613" },
+                { name: "مازن مصطفي اسماعيل عبداللطيف", code: "E281952" },
+                { name: "مالك محمود مرسى", code: "E119798" },
+                { name: "محمد احمد سيد محمد", code: "E492719" },
+                { name: "محمد احمد عبدالستار عبدالجابر عبدالامام", code: "E391859" },
+                { name: "محمد السيد رمضان عيد", code: "E924525" },
+                { name: "محمد خالد اسماعيل عبدالجليل", code: "E552433" },
+                { name: "محمد خالد سيد عبدالعزيز", code: "E103893" },
+                { name: "محمد سمير مدحت محمود", code: "E186126" },
+                { name: "محمد شريف امين سرحان محمد", code: "E672109" },
+                { name: "محمد طارق احمد عبيد عبدالمقصود", code: "E648010" },
+                { name: "محمد عاشور رمضان عبدالمجيد احمد", code: "E968255" },
+                { name: "محمد عبدالعاطى احمد محمد درويش", code: "E914339" },
+                { name: "محمد مصطفى محمد سعد حجاج", code: "E553728" },
+                { name: "محمود حسين عبدالفتاح فايد الرملى", code: "E758148" },
+                { name: "محمود خالد سيد عبدالعزيز", code: "E609111" },
+                { name: "مروان ايمن خلف السيد محمد", code: "E962890" },
+                { name: "مروان سالم عبدالمنعم سالم علي", code: "E707227" },
+                { name: "مضطفى احمد سعيد عبدالحميد حسن", code: "E278286" },
+                { name: "معاذ محمد مصطفى رشوان عبدالمجيد", code: "E743108" },
+                { name: "مهند حازم شعبان جعفر عباس", code: "E280849" },
+                { name: "مينا ملاك فهيم حنس عبدالمسيح", code: "E402597" },
+                { name: "ناصر محمد ناصر محمد على", code: "E796742" },
+                { name: "ياسين احمد منصور احمد", code: "E549940" },
+                { name: "ياسين اشرف عزالدين على يوسف", code: "E373679" },
+                { name: "ياسين محمد محى الدين سيد عبدالوهاب", code: "E449632" },
+                { name: "ياسين مجدي عبد السميع عبد السيد", code: "E248351" },
+                { name: "يوسف رضا عبدالمنعم امين", code: "E952627" },
+                { name: "يوسف رفاعى حسنى على سيد", code: "E947054" },
+                { name: "يوسف طه حسن محمد حسن", code: "E240180" },
+                { name: "يوسف عيد محمود", code: "E423127" },
+                { name: "يوسف محمود حسين محمود بهنساوى", code: "E830724" },
+                { name: "يوسف محمود سراج الدين مرسى خليل", code: "E959637" },
+                { name: "أروى فرج منشاوى عبده عبدالرحمن", code: "E849349" },
+                { name: "اسراء جمال محمد عبداللاه عبدالعال", code: "E567032" },
+                { name: "ايلاريا توفيق راغب توفيق داود", code: "E426962" },
+                { name: "جنه احمد بدر محمد", code: "E930846" },
+                { name: "جاسمين محمد محمود يونس الدكرورى", code: "E626862" },
+                { name: "جنا امام محمد امام محمد", code: "E670694" },
+                { name: "جنا حماد منصور على شحاته", code: "E125366" },
+                { name: "جنى طارق عبدالرحمن فواز عبدالعال", code: "E927143" },
+                { name: "جنى محمد عبدالرحيم احمد عبدالرحيم", code: "E180562" },
+                { name: "جنى محمد فتحى محمد ابوكريته", code: "E897008" },
+                { name: "جنى محمود فتحى عبدالعزيز بيومى", code: "E574070" },
+                { name: "جودى محمد محمود امام عبدالقوى", code: "E545951" },
+                { name: "جومانه ضاحي محمد احمد", code: "E284379" },
+                { name: "حبيبه حسن احمد عبدالعزيز المنجد", code: "E797780" },
+                { name: "رنا عبدالناصر عبدالصادق عبدالمعطى محمد", code: "E239152" },
+                { name: "رودينا طه اسماعيل محمد", code: "E987348" },
+                { name: "رودينا محمد سيد محمود عبدالكريم", code: "E589044" },
+                { name: "رودينا محمود عنتر هاشم محمدين", code: "E911528" },
+                { name: "زينب مجدى عبدالتواب عيد احمد", code: "E673427" },
+                { name: "ساجدة علي إسماعيل عبدالمنعم", code: "E920407" },
+                { name: "سجده محمد صلاح محمد محمد عبدالله", code: "E779952" },
+                { name: "سجى اسامه محمود احمد هشام", code: "E792224" },
+                { name: "سلمى السيد محمد محمد زيان", code: "E888724" },
+                { name: "سلمى محمود فرج محمد سالم", code: "E915556" },
+                { name: "سما احمد عبدالعاطى على", code: "E337554" },
+                { name: "سما حسين علي حسن", code: "E957441" },
+                { name: "سهير احمد محمد على", code: "E831110" },
+                { name: "شروق عمرو حسن على حسن", code: "E399209" },
+                { name: "فاطمة شريف كامل على محمد", code: "E298385" },
+                { name: "فريده رضا جيد ابو زيد", code: "E671490" },
+                { name: "فريده محمد حسن عبدالعال", code: "E676978" },
+                { name: "لينا سامى عبدالعزيز محمد عوض", code: "E832298" },
+                { name: "ماريا نادر انيس عريان", code: "E986935" },
+                { name: "مرام خالد محمد معوض على", code: "E783062" },
+                { name: "مريم محمد كمال محمد", code: "E296376" },
+                { name: "مريم مراد الدين صبحى فوزى احمد", code: "E205887" },
+                { name: "ميار سليمان السيد طه هاشم درباله", code: "E385929" },
+                { name: "نور مبروك محمد مبروك مصطفي", code: "E248279" },
+                { name: "هنا عصام احمد حلمى على احمد", code: "E724918" },
+                { name: "هنا ناصر فهمى ابو المجد", code: "E107459" },
+                { name: "ولاء محمود محمد اسماعيل اسماعيل", code: "E439698" },
+                { name: "يارا ياسين محمد الصغير", code: "E226815" }
+            ]
+        };
+
+        // ==================== دوال المساعدة ====================
+        window.showLoading = function() {
+            document.getElementById('loadingBar').style.display = 'block';
+        };
+
+        window.hideLoading = function() {
+            document.getElementById('loadingBar').style.display = 'none';
+        };
+
+        window.showToast = function(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        };
+
+        window.showAlert = function(message, type = 'success') {
+            const alertDiv = document.getElementById('alertMessage');
+            alertDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => {
+                alertDiv.innerHTML = '';
+            }, 5000);
+        };
+
+        // ==================== رفع الطلاب ====================
+        window.uploadStudents = async function(grade) {
+            showLoading();
+            try {
+                const students = studentsData[grade];
+                const batch = writeBatch(db);
+                let gradeLetter = '';
+                
+                switch(grade) {
+                    case '4': gradeLetter = 'A'; break;
+                    case '5': gradeLetter = 'B'; break;
+                    case '6': gradeLetter = 'C'; break;
+                    case '7': gradeLetter = 'D'; break;
+                    case '8': gradeLetter = 'E'; break;
+                }
+                
+                for (const student of students) {
+                    // التأكد أن الكود يبدأ بالحرف الصحيح
+                    if (!student.code.startsWith(gradeLetter)) {
+                        console.warn(`تحذير: كود الطالب ${student.name} لا يبدأ بالحرف ${gradeLetter}`);
+                    }
+                    
+                    const studentRef = doc(db, 'students', student.code);
+                    batch.set(studentRef, {
+                        name: student.name,
+                        code: student.code,
+                        grade: grade,
+                        gradeLetter: gradeLetter,
+                        totalScore: 0,
+                        monthlyPoints: 0,
+                        lastExamDate: null,
+                        createdAt: new Date().toISOString()
+                    });
+                }
+                
+                await batch.commit();
+                showToast(`تم رفع ${students.length} طالب للصف ${getGradeName(grade)} بنجاح`);
+                showAlert(`✅ تم رفع ${students.length} طالب`, 'success');
+            } catch (error) {
+                console.error('خطأ في رفع الطلاب:', error);
+                showAlert('❌ حدث خطأ: ' + error.message, 'error');
+            }
+            hideLoading();
+        };
+
+        // ==================== رفع المدرسين ====================
+        window.uploadTeachers = async function() {
+            showLoading();
+            try {
+                const subjects = [
+                    { letter: 'A', name: 'عربي' },
+                    { letter: 'E', name: 'إنجليزي' },
+                    { letter: 'M', name: 'رياضيات' },
+                    { letter: 'S', name: 'علوم' },
+                    { letter: 'D', name: 'دراسات' }
+                ];
+                
+                const grades = ['4', '5', '6', '7', '8'];
+                const batch = writeBatch(db);
+                let teachersCount = 0;
+                
+                for (const subject of subjects) {
+                    for (const grade of grades) {
+                        // توليد 3 أرقام عشوائية
+                        const random = Math.floor(Math.random() * 900 + 100).toString();
+                        const teacherCode = subject.letter + grade + random;
+                        
+                        // ✅ الكود الصحيح - استخدم الكود نفسه كـ Document ID
+                        const teacherRef = doc(db, 'teachers', teacherCode); // المفتاح: هنا بنستخدم الكود نفسه
+                        await setDoc(teacherRef, {
+                            code: teacherCode,           // A4817
+                            subject: subject.name,        // عربي
+                            subjectLetter: subject.letter, // A
+                            grade: grade,                 // 4
+                            createdAt: new Date().toISOString(),
+                            isActive: true
+                        });
+                        teachersCount++;
+                    }
+                }
+                
+                await batch.commit();
+                showToast(`تم رفع ${teachersCount} مدرس بنجاح`);
+                showAlert(`✅ تم رفع ${teachersCount} مدرس`, 'success');
+            } catch (error) {
+                console.error('خطأ في رفع المدرسين:', error);
+                showAlert('❌ حدث خطأ: ' + error.message, 'error');
+            }
+            hideLoading();
+        };
+
+        // ==================== إنشاء جميع الكوليكشنز ====================
+        window.createAllCollections = async function() {
+            showLoading();
+            try {
+                // 1. إنشاء settings
+                const settingsRef = doc(db, 'settings', 'config');
+                await setDoc(settingsRef, {
+                    examDuration: 60, // دقيقة
+                    questionsCount: 10,
+                    monthlyRankingStart: new Date().toISOString(),
+                    subjects: {
+                        '0': { name: 'عربي', day: 'الأحد', letter: 'A' },
+                        '1': { name: 'إنجليزي', day: 'الإثنين', letter: 'E' },
+                        '2': { name: 'رياضيات', day: 'الثلاثاء', letter: 'M' },
+                        '3': { name: 'علوم', day: 'الأربعاء', letter: 'S' },
+                        '4': { name: 'دراسات', day: 'الخميس', letter: 'D' }
+                    },
+                    holidays: ['الجمعة', 'السبت'],
+                    createdAt: new Date().toISOString()
+                });
+
+                // 2. إنشاء مستند تجريبي في exams (هيتحذف بعدين)
+                const demoExamRef = doc(db, 'exams', 'DEMO_' + Date.now());
+                await setDoc(demoExamRef, {
+                    subject: 'عربي',
+                    grade: '4',
+                    week: '1',
+                    createdAt: new Date().toISOString(),
+                    isActive: false
+                });
+
+                // 3. إنشاء مستند تجريبي في results
+                const demoResultRef = doc(db, 'results', 'DEMO_' + Date.now());
+                await setDoc(demoResultRef, {
+                    studentCode: 'DEMO',
+                    examId: 'DEMO',
+                    score: 0,
+                    createdAt: new Date().toISOString()
+                });
+
+                // 4. إنشاء monthlyRanking
+                const rankingRef = doc(db, 'monthlyRanking', 'current');
+                await setDoc(rankingRef, {
+                    month: new Date().getMonth() + 1,
+                    year: new Date().getFullYear(),
+                    rankings: {},
+                    updatedAt: new Date().toISOString()
+                });
+
+                showToast('تم إنشاء جميع الكوليكشنز بنجاح');
+                showAlert('✅ تم إنشاء جميع الكوليكشنز', 'success');
+            } catch (error) {
+                console.error('خطأ في إنشاء الكوليكشنز:', error);
+                showAlert('❌ حدث خطأ: ' + error.message, 'error');
+            }
+            hideLoading();
+        };
+
+        // ==================== البحث عن طالب ====================
+        window.searchStudent = async function() {
+            const searchName = document.getElementById('searchName').value.trim();
+            if (!searchName) {
+                showAlert('❌ من فضلك أدخل اسم للبحث', 'error');
+                return;
+            }
+
+            showLoading();
+            try {
+                const studentsRef = collection(db, 'students');
+                
+                // البحث في Firebase (بس مش هينفع نعمل where مع Arabic text search مباشرة)
+                // هنعمل حل بديل: نجيب كل الطلاب ونفلتر في الذاكرة (ده توفير للقراءات)
+                const snapshot = await getDocs(studentsRef);
+                
+                const results = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.name && data.name.includes(searchName)) {
+                        results.push({
+                            name: data.name,
+                            code: data.code,
+                            grade: data.grade,
+                            docId: doc.id
+                        });
+                    }
+                });
+
+                displaySearchResults(results);
+                
+                if (results.length === 0) {
+                    showAlert('❌ لا توجد نتائج للبحث', 'error');
+                } else {
+                    showToast(`تم العثور على ${results.length} نتيجة`);
+                }
+            } catch (error) {
+                console.error('خطأ في البحث:', error);
+                showAlert('❌ حدث خطأ في البحث', 'error');
+            }
+            hideLoading();
+        };
+
+        // ==================== عرض نتائج البحث ====================
+        function displaySearchResults(results) {
+            const resultsDiv = document.getElementById('searchResults');
+            
+            if (results.length === 0) {
+                resultsDiv.innerHTML = '<div class="student-item">لا توجد نتائج</div>';
+                return;
+            }
+
+            let html = '';
+            results.forEach(student => {
+                html += `
+                    <div class="student-item" id="student-${student.code}">
+                        <div class="student-info">
+                            <span class="student-name">${student.name}</span>
+                            <span class="student-code">${student.code} | المرحلة: ${getGradeName(student.grade)}</span>
+                        </div>
+                        <div class="edit-controls">
+                            <input type="text" class="edit-input" id="edit-${student.code}" value="${student.code}" placeholder="الكود الجديد">
+                            <button class="btn btn-sm" onclick="updateStudentCode('${student.code}', '${student.name}')">تعديل</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            resultsDiv.innerHTML = html;
+        }
+
+        // ==================== تعديل كود الطالب ====================
+        window.updateStudentCode = async function(oldCode, studentName) {
+            const newCode = document.getElementById(`edit-${oldCode}`).value.trim();
+            
+            if (!newCode) {
+                showAlert('❌ الكود الجديد مطلوب', 'error');
+                return;
+            }
+
+            // التحقق من صيغة الكود
+            const validPattern = /^[A-E]\d{6}$/;
+            if (!validPattern.test(newCode)) {
+                showAlert('❌ صيغة الكود غير صحيحة. يجب أن يبدأ بحرف A-E ثم 6 أرقام', 'error');
+                return;
+            }
+
+            showLoading();
+            try {
+                // 1. إنشاء المستند الجديد
+                const newStudentRef = doc(db, 'students', newCode);
+                await setDoc(newStudentRef, {
+                    name: studentName,
+                    code: newCode,
+                    grade: newCode[0] === 'A' ? '4' : 
+                           newCode[0] === 'B' ? '5' :
+                           newCode[0] === 'C' ? '6' :
+                           newCode[0] === 'D' ? '7' : '8',
+                    gradeLetter: newCode[0],
+                    updatedAt: new Date().toISOString()
+                });
+
+                // 2. حذف المستند القديم
+                const oldStudentRef = doc(db, 'students', oldCode);
+                await deleteDoc(oldStudentRef);
+
+                showToast(`تم تعديل كود الطالب بنجاح`);
+                showAlert(`✅ تم تعديل الكود من ${oldCode} إلى ${newCode}`, 'success');
+                
+                // إعادة البحث
+                setTimeout(() => {
+                    searchStudent();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('خطأ في تعديل الكود:', error);
+                showAlert('❌ حدث خطأ: ' + error.message, 'error');
+            }
+            hideLoading();
+        };
+
+        // ==================== دوال مساعدة ====================
+        function getGradeName(grade) {
+            const grades = {
+                '4': 'الرابع الابتدائي',
+                '5': 'الخامس الابتدائي',
+                '6': 'السادس الابتدائي',
+                '7': 'الأول الإعدادي',
+                '8': 'الثاني الإعدادي'
+            };
+            return grades[grade] || grade;
+        }
+
+        // ==================== إضافة طالب يدوي ====================
+        window.manualUpload = function() {
+            const name = prompt('أدخل اسم الطالب:');
+            if (!name) return;
+            
+            const code = prompt('أدخل كود الطالب (يبدأ بحرف A-E ثم 6 أرقام):');
+            if (!code) return;
+            
+            const validPattern = /^[A-E]\d{6}$/;
+            if (!validPattern.test(code)) {
+                alert('❌ صيغة الكود غير صحيحة');
+                return;
+            }
+
+            const grade = code[0] === 'A' ? '4' : 
+                         code[0] === 'B' ? '5' :
+                         code[0] === 'C' ? '6' :
+                         code[0] === 'D' ? '7' : '8';
+
+            showLoading();
+            
+            // إضافة للقاعدة المحلية مؤقتاً
+            if (!studentsData[grade]) studentsData[grade] = [];
+            studentsData[grade].push({ name, code });
+            
+            // رفع لقاعدة البيانات
+            const studentRef = doc(db, 'students', code);
+            setDoc(studentRef, {
+                name: name,
+                code: code,
+                grade: grade,
+                gradeLetter: code[0],
+                totalScore: 0,
+                monthlyPoints: 0,
+                lastExamDate: null,
+                createdAt: new Date().toISOString()
+            }).then(() => {
+                hideLoading();
+                showToast('تم إضافة الطالب بنجاح');
+                showAlert(`✅ تم إضافة الطالب ${name}`, 'success');
+            }).catch(error => {
+                hideLoading();
+                showAlert('❌ حدث خطأ: ' + error.message, 'error');
+            });
+        };
+
+        // ==================== التبديل بين التبويبات ====================
+        window.switchTab = function(tabName) {
+            // تحديث التبويبات
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // تفعيل التبويب المختار
+            event.target.classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        };
+
+        // ==================== تهيئة الإعدادات ====================
+        window.initSettings = function() {
+            createAllCollections();
+        };
+
+        // ==================== عرض الإحصائيات ====================
+        window.showStats = async function() {
+            showLoading();
+            try {
+                const studentsRef = collection(db, 'students');
+                const teachersRef = collection(db, 'teachers');
+                
+                const [studentsSnap, teachersSnap] = await Promise.all([
+                    getDocs(studentsRef),
+                    getDocs(teachersRef)
+                ]);
+
+                const statsCard = document.getElementById('statsCard');
+                const statsContent = document.getElementById('statsContent');
+                
+                statsContent.innerHTML = `
+                    <div class="stats-card">
+                        <div>👥 إجمالي الطلاب</div>
+                        <div class="stats-number">${studentsSnap.size}</div>
+                    </div>
+                    <div class="stats-card">
+                        <div>👨‍🏫 إجمالي المدرسين</div>
+                        <div class="stats-number">${teachersSnap.size}</div>
+                    </div>
+                `;
+                
+                statsCard.style.display = 'block';
+            } catch (error) {
+                showAlert('❌ خطأ في جلب الإحصائيات', 'error');
+            }
+            hideLoading();
+        };
+
+        // ==================== جعل الدوال متاحة عالمياً ====================
+        window.uploadStudents = uploadStudents;
+        window.uploadTeachers = uploadTeachers;
+        window.createAllCollections = createAllCollections;
+        window.searchStudent = searchStudent;
+        window.updateStudentCode = updateStudentCode;
+        window.manualUpload = manualUpload;
+        window.initSettings = initSettings;
+        window.showStats = showStats;
+        window.switchTab = switchTab;
+
+        console.log('✅ صفحة الإدارة جاهزة!');
+    </script>
+</body>
+</html>
+```
