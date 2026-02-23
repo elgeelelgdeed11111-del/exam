@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <title>مدرسة الجيل الجديد الخاصة - نظام الامتحانات</title>
     <style>
-        /* نفس التنسيقات السابقة - تم الحفاظ عليها */
+        /* نفس التنسيقات السابقة - تم الحفاظ عليها بالكامل */
         :root {
             --primary: #1e3c72;
             --secondary: #2a5298;
@@ -478,6 +478,16 @@
             margin-bottom: 10px;
         }
 
+        .week-badge {
+            background: var(--primary);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
         @media (max-width: 480px) {
             .options-grid {
                 grid-template-columns: 1fr;
@@ -541,6 +551,11 @@
             <div class="exam-header">
                 <span class="exam-title" id="examSubject">...</span>
                 <span class="exam-date-badge" id="examDay">...</span>
+            </div>
+
+            <div class="exam-info" style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem;">
+                <span id="examWeek" class="week-badge"></span>
+                <span id="examStatusText" style="color: var(--primary);"></span>
             </div>
 
             <div class="timer" id="timer">60:00</div>
@@ -648,6 +663,7 @@
         let currentStudent = null;
         let currentExam = null;
         let currentExamId = null;
+        let currentExamWeek = null;
         let studentAnswers = {};
         let examStartTime = null;
         let timerInterval = null;
@@ -717,7 +733,7 @@
                     localStorage.setItem('studentCode', code);
                     
                     displayStudentInfo();
-                    await checkTodayExam();
+                    await findTodayExam();
                 } else {
                     showAlert('❌ الكود غير صحيح أو غير مسجل', 'danger');
                 }
@@ -740,8 +756,8 @@
             document.getElementById('savedCodeHint').style.display = 'none';
         }
 
-        // ==================== ✅ دالة البحث عن الامتحان المحدثة ====================
-        async function checkTodayExam() {
+        // ==================== ✅ دالة جلب الامتحان باستخدام المعرف الثابت ====================
+        async function findTodayExam() {
             const today = new Date();
             const dayOfWeek = today.getDay(); // 0 الأحد, 1 الإثنين, 2 الثلاثاء, 3 الأربعاء, 4 الخميس, 5 الجمعة, 6 السبت
             
@@ -762,57 +778,41 @@
             showLoading();
 
             try {
-                // ✅ البحث الديناميكي باستخدام Query
-                const examsRef = collection(db, 'exams');
-                const q = query(
-                    examsRef,
-                    where('grade', '==', currentStudent.grade),
-                    where('subject', '==', todaySubject),
-                    where('isActive', '==', true),
-                    orderBy('week', 'desc'), // ترتيب تنازلي حسب رقم الأسبوع
-                    limit(1) // أحدث امتحان فقط
-                );
+                // ✅ استخدام المعرف الثابت مباشرة: [Grade]_[Subject]
+                const examId = `${currentStudent.grade}_${todaySubject}`;
+                console.log('🔍 البحث عن الامتحان بالمعرف الثابت:', examId);
+                
+                const examRef = doc(db, 'exams', examId);
+                const examSnap = await getDoc(examRef);
 
-                const querySnapshot = await getDocs(q);
+                if (!examSnap.exists()) {
+                    console.log('📭 لا يوجد امتحان لهذا المعرف');
+                    showExamStatus('لا يوجد امتحان متاح حالياً للمادة المحددة', 'warning');
+                    hideLoading();
+                    return;
+                }
 
-                if (querySnapshot.empty) {
-                    // إذا لم يجد امتحان نشط، جرب بدون شرط isActive
-                    const q2 = query(
-                        examsRef,
-                        where('grade', '==', currentStudent.grade),
-                        where('subject', '==', todaySubject),
-                        orderBy('week', 'desc'),
-                        limit(1)
-                    );
-                    
-                    const snapshot2 = await getDocs(q2);
-                    
-                    if (snapshot2.empty) {
-                        showExamStatus('لم يتم إضافة امتحان لهذه المادة بعد', 'warning');
-                        hideLoading();
-                        return;
-                    }
-                    
-                    // يوجد امتحان لكنه غير نشط
-                    const examDoc = snapshot2.docs[0];
-                    currentExam = examDoc.data();
-                    currentExamId = examDoc.id;
-                    
+                const examData = examSnap.data();
+                
+                // ✅ التحقق من حالة الامتحان (isActive)
+                if (examData.isActive === false) {
                     showExamStatus('⚠️ الامتحان غير نشط حالياً - يرجى مراجعة المدرس', 'warning');
                     hideLoading();
                     return;
                 }
 
-                // ✅ تم العثور على الامتحان - نأخذ أول نتيجة (الأحدث)
-                const examDoc = querySnapshot.docs[0];
-                currentExam = examDoc.data();
-                currentExamId = examDoc.id; // المعرف الفعلي من Firestore
+                // ✅ حفظ بيانات الامتحان مع رقم الأسبوع
+                currentExam = examData;
+                currentExamId = examId; // المعرف الثابت
+                currentExamWeek = examData.week || '?'; // رقم الأسبوع من بيانات الامتحان
 
                 // عرض معلومات الامتحان
                 document.getElementById('examSubject').textContent = SUBJECT_NAMES[todaySubject];
                 document.getElementById('examDay').textContent = DAY_NAMES[dayOfWeek];
+                document.getElementById('examWeek').textContent = `الأسبوع ${currentExamWeek}`;
+                document.getElementById('examStatusText').textContent = 'الامتحان متاح';
 
-                // التحقق مما إذا كان الطالب قد أدى هذا الامتحان مسبقاً
+                // ✅ التحقق مما إذا كان الطالب قد أدى هذا الامتحان مسبقاً
                 await checkIfExamined();
 
             } catch (error) {
@@ -831,6 +831,7 @@
             
             document.getElementById('examSubject').textContent = 'إجازة أسبوعية';
             document.getElementById('examDay').textContent = holidayNames[dayOfWeek];
+            document.getElementById('examWeek').textContent = '';
             
             document.getElementById('examStatus').style.display = 'block';
             document.getElementById('examStatus').innerHTML = `
@@ -847,10 +848,11 @@
             document.getElementById('questionsContainer').innerHTML = '';
         }
 
-        // ==================== التحقق من تكرار الامتحان (محدث) ====================
+        // ==================== ✅ التحقق من تكرار الامتحان (باستخدام المعرف الثابت + رقم الأسبوع) ====================
         async function checkIfExamined() {
-            // ✅ استخدام المعرف الفعلي للامتحان
-            const resultId = `${currentStudent.code}_${currentExamId}`;
+            // ✅ المعرف الفريد للنتيجة: [studentCode]_G[grade]_S[subject]_W[week]
+            const resultId = `${currentStudent.code}_G${currentStudent.grade}_S${currentExam.subject}_W${currentExamWeek}`;
+            console.log('🔍 التحقق من النتيجة بالمعرف:', resultId);
             
             try {
                 const resultRef = doc(db, 'results', resultId);
@@ -858,8 +860,10 @@
 
                 if (resultSnap.exists()) {
                     const previousResult = resultSnap.data();
+                    console.log('✅ تم العثور على نتيجة سابقة:', previousResult);
                     showPreviousResult(previousResult);
                 } else {
+                    console.log('📭 لا توجد نتيجة سابقة - يمكن البدء');
                     document.getElementById('startBtn').style.display = 'block';
                     document.getElementById('submitBtn').style.display = 'none';
                     document.getElementById('examStatus').style.display = 'none';
@@ -980,21 +984,24 @@
             }, 1000);
         }
 
+        // ==================== ✅ حفظ المسودة برقم الأسبوع ====================
         function saveToLocalStorage() {
             const draft = {
                 examId: currentExamId,
+                week: currentExamWeek,
                 answers: studentAnswers,
                 timestamp: Date.now()
             };
-            localStorage.setItem(`exam_draft_${currentStudent.code}`, JSON.stringify(draft));
+            localStorage.setItem(`exam_draft_${currentStudent.code}_W${currentExamWeek}`, JSON.stringify(draft));
         }
 
+        // ==================== ✅ تحميل المسودة برقم الأسبوع ====================
         function loadFromLocalStorage() {
-            const saved = localStorage.getItem(`exam_draft_${currentStudent.code}`);
+            const saved = localStorage.getItem(`exam_draft_${currentStudent.code}_W${currentExamWeek}`);
             if (saved) {
                 try {
                     const draft = JSON.parse(saved);
-                    if (draft.examId === currentExamId) {
+                    if (draft.examId === currentExamId && draft.week === currentExamWeek) {
                         studentAnswers = draft.answers || {};
                         Object.keys(studentAnswers).forEach(qNum => {
                             const optNum = studentAnswers[qNum];
@@ -1005,6 +1012,7 @@
                                 if (radio) radio.checked = true;
                             }
                         });
+                        console.log('✅ تم تحميل المسودة المحلية');
                     }
                 } catch (e) {
                     console.error('خطأ في تحميل المسودة:', e);
@@ -1012,6 +1020,7 @@
             }
         }
 
+        // ==================== ✅ تسليم الامتحان (باستخدام المعرف الفريد مع رقم الأسبوع) ====================
         window.submitExam = async function() {
             const totalQuestions = currentExam.questions.length;
             for (let i = 1; i <= totalQuestions; i++) {
@@ -1035,11 +1044,14 @@
                 const monthlyPoints = score + (score === totalQuestions ? 1 : 0);
                 const batch = writeBatch(db);
                 
-                // ✅ استخدام المعرف الفعلي للامتحان
-                const resultId = `${currentStudent.code}_${currentExamId}`;
+                // ✅ المعرف الفريد للنتيجة: [studentCode]_G[grade]_S[subject]_W[week]
+                const resultId = `${currentStudent.code}_G${currentStudent.grade}_S${currentExam.subject}_W${currentExamWeek}`;
+                console.log('💾 حفظ النتيجة بالمعرف:', resultId);
+                
                 const resultRef = doc(db, 'results', resultId);
                 
                 batch.set(resultRef, {
+                    resultId: resultId,
                     studentCode: currentStudent.code,
                     studentName: currentStudent.name,
                     examId: currentExamId,
@@ -1047,6 +1059,7 @@
                     examSubjectName: SUBJECT_NAMES[currentExam.subject],
                     grade: currentStudent.grade,
                     gradeLetter: currentStudent.gradeLetter,
+                    week: currentExamWeek, // رقم الأسبوع من الامتحان
                     score: score,
                     totalQuestions: totalQuestions,
                     monthlyPoints: monthlyPoints,
@@ -1054,7 +1067,7 @@
                     date: new Date().toISOString(),
                     year: new Date().getFullYear(),
                     month: new Date().getMonth() + 1,
-                    week: currentExam.week
+                    timestamp: Timestamp.now()
                 });
 
                 const studentRef = doc(db, 'students', currentStudent.code);
@@ -1063,12 +1076,15 @@
                     monthlyPoints: increment(monthlyPoints),
                     lastExamDate: new Date().toISOString(),
                     lastExamScore: score,
-                    lastExamId: currentExamId
+                    lastExamId: currentExamId,
+                    lastExamWeek: currentExamWeek
                 });
 
                 await batch.commit();
 
-                localStorage.removeItem(`exam_draft_${currentStudent.code}`);
+                // ✅ مسح المسودة الخاصة بهذا الامتحان فقط
+                localStorage.removeItem(`exam_draft_${currentStudent.code}_W${currentExamWeek}`);
+                
                 if (timerInterval) clearInterval(timerInterval);
 
                 showResultCard({
@@ -1114,11 +1130,13 @@
             statusEl.className = `exam-status alert-${type}`;
             statusEl.innerHTML = message;
             document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('examWeek').textContent = '';
         }
 
         window.logout = function() {
             currentStudent = null;
             currentExam = null;
+            currentExamWeek = null;
             studentAnswers = {};
             
             if (timerInterval) clearInterval(timerInterval);
@@ -1127,6 +1145,7 @@
             document.getElementById('examCard').style.display = 'none';
             document.getElementById('resultCard').style.display = 'none';
             document.getElementById('studentCode').value = '';
+            document.getElementById('examWeek').textContent = '';
             
             checkSavedCode();
         };
@@ -1145,7 +1164,7 @@
         window.logout = logout;
         window.showExamAgain = showExamAgain;
 
-        console.log('✅ صفحة الطالب جاهزة مع البحث الديناميكي عن الامتحانات');
+        console.log('✅ صفحة الطالب جاهزة مع نظام المعرفات الثابتة وحماية نتائج الأسابيع الماضية');
     </script>
 </body>
 </html>
