@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>👑 مراقبة وإدارة الامتحانات</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Cairo', 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #0a1929;
+            min-height: 100vh;
+            padding: 12px;
+            color: #e2e8f0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ===== HEADER ===== */
+        .master-header {
+            background: linear-gradient(145deg, #0f2744, #1a3a5f);
+            border-radius: 24px;
+            padding: 18px 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+            border: 1px solid #2d4b71;
+            border-bottom: 4px solid #ffd700;
+        }
+
+        .header-title h1 {
+            color: #fff;
+            font-size: 1.6rem;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .header-title p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .header-title .current-week {
+            color: #3b82f6;
+            margin-top: 8px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            background: rgba(59, 130, 246, 0.1);
+            padding: 6px 12px;
+            border-radius: 40px;
+            display: inline-block;
+        }
+
+        .stats-cards {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: #1e293b;
+            padding: 12px 10px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid #334155;
+            flex: 1;
+            min-width: 80px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #ffd700;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            white-space: nowrap;
+        }
+
+        /* ===== FILTERS ===== */
+        .filters-bar {
+            background: #0f2744;
+            padding: 15px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #2d4b71;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .filters-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filters-row select {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px 15px;
+            border-radius: 15px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: white;
+            font-size: 0.95rem;
+            outline: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 15px center;
+            padding-left: 40px;
+        }
+
+        .filters-row select:focus {
+            border-color: #3b82f6;
+        }
+
+        .refresh-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 12px 20px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            width: 100%;
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* ===== GRID ===== */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        @media (min-width: 480px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            }
+        }
+
+        .exam-card {
+            background: #1e293b;
+            border-radius: 20px;
+            padding: 18px;
+            border: 1px solid #334155;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .exam-card:active {
+            transform: scale(0.99);
+        }
+
+        .exam-card.status-missing { border-top: 5px solid #ef4444; }
+        .exam-card.status-active { border-top: 5px solid #10b981; }
+        .exam-card.status-inactive { border-top: 5px solid #f59e0b; }
+        .exam-card.status-old { border-top: 5px solid #64748b; }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .subject-grade h3 {
+            color: #f8fafc;
+            font-size: 1.2rem;
+            margin-bottom: 4px;
+        }
+
+        .subject-grade p {
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .badge-missing { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .badge-active { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .badge-inactive { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .badge-old { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+
+        .exam-details {
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+        }
+
+        .exam-details div {
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .exam-details div:last-child {
+            margin-bottom: 0;
+        }
+
+        .exam-details strong {
+            color: #f8fafc;
+        }
+
+        .missing-message {
+            text-align: center;
+            color: #ef4444;
+            padding: 15px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 12px;
+            margin: 10px 0;
+            font-size: 0.9rem;
+        }
+
+        /* ===== BUTTONS ===== */
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px 8px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 0.85rem;
+        }
+
+        .btn:active { 
+            transform: scale(0.95); 
+            opacity: 0.9;
+        }
+
+        .btn-toggle-on { 
+            background: #10b981; 
+            color: white; 
+        }
+
+        .btn-toggle-off { 
+            background: #f59e0b; 
+            color: white; 
+        }
+
+        .btn-delete { 
+            background: rgba(239, 68, 68, 0.1); 
+            color: #ef4444; 
+            border: 1px solid #ef4444; 
+        }
+
+        .btn-delete:active { 
+            background: #ef4444; 
+            color: white; 
+        }
+
+        /* ===== LOADING ===== */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 25, 41, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(3px);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #1e293b;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 
+            to { transform: rotate(360deg); } 
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            right: 15px;
+            background: #334155;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: none;
+            z-index: 1000;
+            animation: slideUp 0.3s ease;
+            border-right: 5px solid #3b82f6;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        @media (min-width: 480px) {
+            .toast {
+                left: 20px;
+                right: auto;
+                max-width: 350px;
+            }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* ===== TOUCH OPTIMIZATIONS ===== */
+        button, select, .exam-card {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        select {
+            font-size: 16px; /* منع التكبير التلقائي على iOS */
+        }
+
+        /* تحسين التمرير */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="toast" id="toastMsg"></div>
+
+    <div class="container">
+        <div class="master-header">
+            <div class="header-title">
+                <h1>
+                    <span>👁️</span> مراقبة وإدارة الامتحانات
+                </h1>
+                <p>لوحة تحكم المدير لاكتشاف النواقص وإدارة التفعيل</p>
+                <div class="current-week" id="currentWeekDisplay">رقم الأسبوع الحالي: جاري الحساب...</div>
+            </div>
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-value" id="statActive">0</div>
+                    <div class="stat-label">نشط</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statMissing" style="color: #ef4444;">0</div>
+                    <div class="stat-label">ناقص</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statTotal">25</div>
+                    <div class="stat-label">الإجمالي</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="filters-bar">
+            <div class="filters-row">
+                <select id="filterGrade" onchange="renderDashboard()">
+                    <option value="all">-- جميع المراحل --</option>
+                    <option value="4">الصف الرابع</option>
+                    <option value="5">الصف الخامس</option>
+                    <option value="6">الصف السادس</option>
+                    <option value="7">الأول الإعدادي</option>
+                    <option value="8">الثاني الإعدادي</option>
+                </select>
+                <select id="filterStatus" onchange="renderDashboard()">
+                    <option value="all">-- كل الحالات --</option>
+                    <option value="missing">❌ لم يتم رفعه</option>
+                    <option value="active">✅ نشط الآن</option>
+                    <option value="inactive">⏸️ غير نشط</option>
+                    <option value="old">⏳ قديم</option>
+                </select>
+            </div>
+            <button class="refresh-btn" onclick="loadExamsData()">
+                <span>🔄</span> تحديث البيانات
+            </button>
+        </div>
+
+        <div class="dashboard-grid" id="dashboardGrid">
+            <!-- سيتم ملؤها ديناميكياً -->
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            getDocs,
+            doc,
+            updateDoc,
+            deleteDoc
+        } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB27lyphN9YxgB4eFwuKWi0ghjuAutpu8o",
+            authDomain: "manssa-oloom1352007.firebaseapp.com",
+            projectId: "manssa-oloom1352007",
+            storageBucket: "manssa-oloom1352007.firebasestorage.app",
+            messagingSenderId: "191595591961",
+            appId: "1:191595591961:web:79ff9bbb52cc08cb862d88"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // ==================== بيانات النظام الثابتة ====================
+        const GRADES = [
+            { id: 4, name: 'الصف الرابع الابتدائي' },
+            { id: 5, name: 'الصف الخامس الابتدائي' },
+            { id: 6, name: 'الصف السادس الابتدائي' },
+            { id: 7, name: 'الصف الأول الإعدادي' },
+            { id: 8, name: 'الصف الثاني الإعدادي' }
+        ];
+
+        const SUBJECTS = [
+            { id: 'A', name: 'اللغة العربية' },
+            { id: 'E', name: 'اللغة الإنجليزية' },
+            { id: 'M', name: 'الرياضيات' },
+            { id: 'S', name: 'العلوم' },
+            { id: 'D', name: 'الدراسات الاجتماعية' }
+        ];
+
+        let allExams = {}; // تخزين الامتحانات المجلوبة
+        let currentWeekNumber = 0;
+
+        // ==================== دوال مساعدة ====================
+        const showLoading = () => document.getElementById('loadingOverlay').style.display = 'flex';
+        const hideLoading = () => document.getElementById('loadingOverlay').style.display = 'none';
+
+        window.showToast = function(msg, color = '#3b82f6') {
+            const toast = document.getElementById('toastMsg');
+            toast.textContent = msg;
+            toast.style.borderRightColor = color;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 3000);
+        };
+
+        // حساب رقم الأسبوع الحالي (نفس الطريقة المتبعة في باقي السيستم)
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+            var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+            return Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+        }
+
+        // ==================== جلب وتحليل البيانات ====================
+        window.loadExamsData = async function() {
+            showLoading();
+            currentWeekNumber = getWeekNumber(new Date());
+            document.getElementById('currentWeekDisplay').textContent = `رقم الأسبوع الحالي: ${currentWeekNumber}`;
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "exams"));
+                allExams = {}; // تفريغ القديم
+                
+                querySnapshot.forEach((doc) => {
+                    allExams[doc.id] = doc.data();
+                });
+
+                renderDashboard();
+            } catch (error) {
+                console.error("Error fetching exams:", error);
+                showToast("❌ حدث خطأ في جلب البيانات", "#ef4444");
+            }
+            hideLoading();
+        };
+
+        // ==================== رسم لوحة القيادة ====================
+        window.renderDashboard = function() {
+            const grid = document.getElementById('dashboardGrid');
+            const filterGrade = document.getElementById('filterGrade').value;
+            const filterStatus = document.getElementById('filterStatus').value;
+            
+            grid.innerHTML = '';
+            
+            let countActive = 0;
+            let countMissing = 0;
+
+            // المرور على جميع الاحتمالات (25 احتمال)
+            GRADES.forEach(grade => {
+                if (filterGrade !== 'all' && grade.id.toString() !== filterGrade) return;
+
+                SUBJECTS.forEach(subject => {
+                    const expectedId = `${grade.id}_${subject.id}`;
+                    const exam = allExams[expectedId];
+                    
+                    let status = 'missing'; // الافتراضي: غير موجود
+                    
+                    if (exam) {
+                        if (exam.week < currentWeekNumber - 1) {
+                            status = 'old'; // امتحان منسوب لأسابيع قديمة جداً
+                        } else if (exam.isActive) {
+                            status = 'active';
+                            countActive++;
+                        } else {
+                            status = 'inactive';
+                        }
+                    } else {
+                        countMissing++;
+                    }
+
+                    // تطبيق فلتر الحالة
+                    if (filterStatus !== 'all' && status !== filterStatus) return;
+
+                    // إنشاء البطاقة
+                    grid.appendChild(createExamCard(grade, subject, exam, status, expectedId));
+                });
+            });
+
+            // تحديث الإحصائيات إذا لم يكن هناك فلاتر
+            if(filterGrade === 'all' && filterStatus === 'all') {
+                document.getElementById('statActive').textContent = countActive;
+                document.getElementById('statMissing').textContent = countMissing;
+            }
+        };
+
+        // ==================== إنشاء بطاقة الامتحان ====================
+        function createExamCard(grade, subject, exam, status, examId) {
+            const card = document.createElement('div');
+            card.className = `exam-card status-${status}`;
+
+            let badgeHtml = '';
+            let detailsHtml = '';
+            let actionsHtml = '';
+
+            if (status === 'missing') {
+                badgeHtml = `<span class="badge badge-missing">❌ غير موجود</span>`;
+                detailsHtml = `<div class="missing-message">المدرس لم يقم بإنشاء امتحان هذا الأسبوع</div>`;
+            } else {
+                if (status === 'active') badgeHtml = `<span class="badge badge-active">✅ نشط</span>`;
+                else if (status === 'inactive') badgeHtml = `<span class="badge badge-inactive">⏸️ غير نشط</span>`;
+                else if (status === 'old') badgeHtml = `<span class="badge badge-old">⏳ قديم</span>`;
+
+                const dateStr = exam.updatedAt ? new Date(exam.updatedAt).toLocaleString('ar-EG', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : 'غير معروف';
+                
+                detailsHtml = `
+                    <div class="exam-details">
+                        <div><span>الأسبوع:</span> <strong>${exam.week || '?'}</strong></div>
+                        <div><span>الأسئلة:</span> <strong>${exam.questions ? exam.questions.length : 0}</strong></div>
+                        <div><span>آخر تعديل:</span> <strong>${dateStr}</strong></div>
+                    </div>
+                `;
+
+                actionsHtml = `
+                    <div class="actions">
+                        ${exam.isActive 
+                            ? `<button class="btn btn-toggle-off" onclick="toggleStatus('${examId}', false)">⏸️ إيقاف</button>`
+                            : `<button class="btn btn-toggle-on" onclick="toggleStatus('${examId}', true)">▶️ تفعيل</button>`
+                        }
+                        <button class="btn btn-delete" onclick="deleteExam('${examId}', '${subject.name}')">🗑️ حذف</button>
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <div class="subject-grade">
+                        <h3>${subject.name}</h3>
+                        <p>${grade.name}</p>
+                    </div>
+                    ${badgeHtml}
+                </div>
+                ${detailsHtml}
+                ${actionsHtml}
+            `;
+
+            return card;
+        }
+
+        // ==================== أزرار التحكم (تفعيل / حذف) ====================
+        window.toggleStatus = async function(examId, makeActive) {
+            showLoading();
+            try {
+                const examRef = doc(db, 'exams', examId);
+                await updateDoc(examRef, {
+                    isActive: makeActive,
+                    updatedAt: new Date().toISOString()
+                });
+                
+                showToast(makeActive ? '✅ تم تفعيل الامتحان للطلاب' : '⏸️ تم إيقاف الامتحان بنجاح');
+                await loadExamsData(); // إعادة التحميل لعكس التغييرات
+            } catch (error) {
+                console.error("Error updating exam:", error);
+                showToast("❌ حدث خطأ أثناء التحديث", "#ef4444");
+            }
+            hideLoading();
+        };
+
+        window.deleteExam = async function(examId, subjectName) {
+            if(!confirm(`⚠️ تحذير خطير: هل أنت متأكد من حذف امتحان "${subjectName}" نهائياً؟ \nلن يتمكن الطلاب من الدخول له بعد الآن!`)) return;
+
+            showLoading();
+            try {
+                await deleteDoc(doc(db, 'exams', examId));
+                showToast('🗑️ تم مسح الامتحان بالكامل من قاعدة البيانات', '#ef4444');
+                await loadExamsData(); // إعادة التحميل
+            } catch (error) {
+                console.error("Error deleting exam:", error);
+                showToast("❌ حدث خطأ أثناء الحذف", "#ef4444");
+            }
+            hideLoading();
+        };
+
+        // ==================== تشغيل عند البداية ====================
+        window.addEventListener('load', loadExamsData);
+
+    </script>
+</body>
+</html>
