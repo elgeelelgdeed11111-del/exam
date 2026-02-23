@@ -234,6 +234,11 @@
             width: 100%;
         }
 
+        .filter-group input[type="date"] {
+            direction: ltr;
+            text-align: right;
+        }
+
         .filter-group button {
             padding: 14px 24px;
             background: #0f2744;
@@ -260,7 +265,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 1000px;
+            min-width: 1200px;
         }
 
         th {
@@ -311,6 +316,25 @@
         .row-btn.view {
             background: #e9d5ff;
             color: #6b21a8;
+        }
+
+        .week-badge {
+            background: #0f2744;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            display: inline-block;
+        }
+
+        .batch-code {
+            font-family: monospace;
+            font-size: 0.9rem;
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 8px;
+            direction: ltr;
+            display: inline-block;
         }
 
         /* ===== PAGINATION ===== */
@@ -1444,10 +1468,10 @@
                     const e = doc.data();
                     html += `
                         <tr>
-                            <td><strong>${e.examCode || doc.id}</strong></td>
+                            <td><strong>${e.examId || doc.id}</strong></td>
                             <td>${SUBJECT_NAMES[e.subject] || '-'}</td>
                             <td>${GRADE_NAMES[e.grade] || '-'}</td>
-                            <td>الأسبوع ${e.week}</td>
+                            <td><span class="week-badge">الأسبوع ${e.week || '?'}</span></td>
                             <td>${e.questions?.length || 0}</td>
                             <td>${e.createdAt ? new Date(e.createdAt).toLocaleDateString('ar-EG') : '-'}</td>
                         </tr>
@@ -1460,7 +1484,7 @@
             hideLoading();
         }
 
-        // ========== RESULTS WITH PAGINATION AND FILTERS ==========
+        // ========== RESULTS WITH PAGINATION AND ADVANCED FILTERS ==========
         function renderResults() {
             return `
                 <div class="content-header">
@@ -1480,8 +1504,12 @@
                         </select>
                     </div>
                     <div class="filter-group">
-                        <label>📅 الأسبوع</label>
-                        <input type="number" id="weekFilter" placeholder="رقم الأسبوع" onchange="applyFilters()">
+                        <label>📅 رقم الأسبوع</label>
+                        <input type="number" id="weekFilter" placeholder="مثال: 12" onchange="applyFilters()">
+                    </div>
+                    <div class="filter-group">
+                        <label>📆 تاريخ محدد</label>
+                        <input type="date" id="dateFilter" onchange="applyFilters()">
                     </div>
                     <div class="filter-group">
                         <label>🔍 كود الطالب</label>
@@ -1499,8 +1527,8 @@
                             <th>المرحلة</th>
                             <th>المادة</th>
                             <th>الدرجة</th>
-                            <th>الأسبوع</th>
-                            <th>التاريخ</th>
+                            <th>كود الدفعة/الأسبوع</th>
+                            <th>تاريخ الامتحان</th>
                             <th>الإجراءات</th>
                         </tr>
                         <tbody id="resultsTableBody"></tbody>
@@ -1523,6 +1551,7 @@
             currentResults = [];
         }
 
+        // ========== LOAD RESULTS WITH ADVANCED FILTERS (الأحدث في الأعلى) ==========
         async function loadResults(reset = true) {
             if (reset) {
                 resetPagination();
@@ -1536,26 +1565,40 @@
             if (loadMoreBtn) loadMoreBtn.classList.add('loading');
 
             try {
-                // Build query with filters
-                let q = query(collection(db, 'results'), orderBy('date', 'desc'), limit(PAGE_SIZE));
+                // بناء الاستعلام مع الفلاتر - ترتيب تنازلي حسب التاريخ (الأحدث أولاً)
+                let constraints = [];
                 
-                const filters = [];
                 if (currentFilters.subject) {
-                    filters.push(where('examSubject', '==', currentFilters.subject));
+                    constraints.push(where('examSubject', '==', currentFilters.subject));
                 }
                 if (currentFilters.week) {
-                    filters.push(where('week', '==', currentFilters.week.toString()));
+                    constraints.push(where('week', '==', currentFilters.week.toString()));
                 }
                 if (currentFilters.studentCode) {
-                    filters.push(where('studentCode', '==', currentFilters.studentCode));
+                    constraints.push(where('studentCode', '==', currentFilters.studentCode));
+                }
+                if (currentFilters.date) {
+                    // فلترة حسب التاريخ (نطاق اليوم بالكامل)
+                    const startDate = new Date(currentFilters.date);
+                    startDate.setHours(0, 0, 0, 0);
+                    
+                    const endDate = new Date(currentFilters.date);
+                    endDate.setHours(23, 59, 59, 999);
+                    
+                    constraints.push(where('date', '>=', startDate.toISOString()));
+                    constraints.push(where('date', '<=', endDate.toISOString()));
                 }
 
+                // ترتيب تنازلي حسب التاريخ (الأحدث أولاً)
+                constraints.push(orderBy('date', 'desc'));
+                
                 if (lastVisible && !reset) {
-                    q = query(collection(db, 'results'), ...filters, orderBy('date', 'desc'), startAfter(lastVisible), limit(PAGE_SIZE));
-                } else {
-                    q = query(collection(db, 'results'), ...filters, orderBy('date', 'desc'), limit(PAGE_SIZE));
+                    constraints.push(startAfter(lastVisible));
                 }
+                
+                constraints.push(limit(PAGE_SIZE));
 
+                const q = query(collection(db, 'results'), ...constraints);
                 const snapshot = await getDocs(q);
                 
                 if (reset) {
@@ -1589,14 +1632,20 @@
             currentResults.forEach(result => {
                 const student = STUDENTS_DATA[result.studentCode] || { name: 'غير معروف', grade: '?' };
                 
+                // تكوين كود الدفعة/الأسبوع
+                const batchCode = `G${student.grade}_S${result.examSubject}_W${result.week || '?'}`;
+                
                 html += `
                     <tr>
                         <td><strong>${student.name}</strong><br><small>${result.studentCode}</small></td>
                         <td>${GRADE_NAMES[student.grade] || '-'}</td>
                         <td>${SUBJECT_NAMES[result.examSubject] || '-'}</td>
                         <td><strong>${result.score}/${result.totalQuestions || 10}</strong></td>
-                        <td>${result.week || '-'}</td>
-                        <td>${result.date ? new Date(result.date).toLocaleDateString('ar-EG') : '-'}</td>
+                        <td>
+                            <span class="batch-code" title="كود الدفعة">${batchCode}</span>
+                            <br><small class="week-badge">الأسبوع ${result.week || '?'}</small>
+                        </td>
+                        <td>${result.date ? new Date(result.date).toLocaleString('ar-EG') : '-'}</td>
                         <td class="row-actions">
                             <button class="row-btn view" onclick="viewResult('${result.id}')">👁️ عرض</button>
                             <button class="row-btn delete" onclick="deleteResult('${result.id}', '${result.studentCode}', ${result.score})">🗑️ حذف</button>
@@ -1619,7 +1668,8 @@
             currentFilters = {
                 subject: document.getElementById('subjectFilter')?.value || '',
                 week: document.getElementById('weekFilter')?.value || '',
-                studentCode: document.getElementById('studentCodeFilter')?.value || ''
+                studentCode: document.getElementById('studentCodeFilter')?.value || '',
+                date: document.getElementById('dateFilter')?.value || ''
             };
             loadResults(true);
         };
@@ -1628,6 +1678,7 @@
             document.getElementById('subjectFilter').value = '';
             document.getElementById('weekFilter').value = '';
             document.getElementById('studentCodeFilter').value = '';
+            document.getElementById('dateFilter').value = '';
             currentFilters = {};
             loadResults(true);
         };
@@ -1641,10 +1692,15 @@
             if (!result) return;
 
             const student = STUDENTS_DATA[result.studentCode] || { name: 'غير معروف', grade: '?' };
-            
-            let questionsHtml = '';
-            if (result.answers && result.examId) {
-                // يمكن جلب تفاصيل الامتحان هنا
+            const batchCode = `G${student.grade}_S${result.examSubject}_W${result.week || '?'}`;
+
+            // بناء عرض تفاصيل الإجابات إذا كانت متوفرة
+            let answersHtml = '';
+            if (result.answers) {
+                answersHtml = '<h4 style="margin: 20px 0 10px;">📋 تفاصيل الإجابات:</h4>';
+                for (let q in result.answers) {
+                    answersHtml += `<p><strong>سؤال ${q}:</strong> تم اختيار الإجابة ${result.answers[q]}</p>`;
+                }
             }
 
             showModal('عرض النتيجة', `
@@ -1653,8 +1709,11 @@
                     <p><strong>المرحلة:</strong> ${GRADE_NAMES[student.grade]}</p>
                     <p><strong>المادة:</strong> ${SUBJECT_NAMES[result.examSubject]}</p>
                     <p><strong>الدرجة:</strong> ${result.score}/${result.totalQuestions || 10}</p>
+                    <p><strong>كود الدفعة:</strong> <span class="batch-code">${batchCode}</span></p>
+                    <p><strong>رقم الأسبوع:</strong> <span class="week-badge">${result.week || '?'}</span></p>
                     <p><strong>نقاط الترتيب:</strong> ${result.monthlyPoints || result.score}</p>
-                    <p><strong>التاريخ:</strong> ${new Date(result.date).toLocaleString('ar-EG')}</p>
+                    <p><strong>تاريخ الامتحان:</strong> ${new Date(result.date).toLocaleString('ar-EG')}</p>
+                    ${answersHtml}
                 </div>
             `);
         };
@@ -1664,17 +1723,17 @@
 
             showLoading();
             try {
-                // Delete result document
+                // حذف مستند النتيجة فقط
                 await deleteDoc(doc(db, 'results', resultId));
 
-                // Subtract score from student's total
+                // تحديث نقاط الطالب (خصم الدرجات فقط)
                 const studentRef = doc(db, 'students', studentCode);
                 await updateDoc(studentRef, {
                     totalScore: increment(-score),
                     monthlyPoints: increment(-score)
                 });
 
-                // Refresh results
+                // تحديث قائمة النتائج
                 await loadResults(true);
                 showAlert('✅ تم حذف النتيجة وتحديث نقاط الطالب', 'success');
 
