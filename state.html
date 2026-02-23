@@ -394,7 +394,50 @@
             border-radius: 20px;
             padding: 20px;
             margin: 20px 0;
-            height: 300px;
+            height: 350px;
+            overflow-x: auto;
+        }
+        
+        .chart-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 15px;
+            height: 250px;
+            min-width: 500px;
+            padding: 10px 0;
+        }
+        
+        .chart-bar-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            min-width: 60px;
+        }
+        
+        .chart-bar {
+            width: 100%;
+            background: linear-gradient(145deg, #1a2b4c, #2d3f5e);
+            border-radius: 8px 8px 0 0;
+            transition: height 0.3s;
+            min-height: 4px;
+        }
+        
+        .chart-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-align: center;
+            max-width: 100px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .chart-value {
+            font-weight: 700;
+            color: #1a2b4c;
+            font-size: 0.9rem;
         }
         
         /* Results Timeline */
@@ -402,6 +445,9 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 5px;
         }
         
         .result-item {
@@ -412,6 +458,11 @@
             justify-content: space-between;
             align-items: center;
             border-right: 6px solid;
+            transition: transform 0.2s;
+        }
+        
+        .result-item:hover {
+            transform: translateX(-5px);
         }
         
         .result-item.high {
@@ -428,18 +479,42 @@
         
         .result-info h4 {
             color: #1a2b4c;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+            font-size: 1rem;
         }
         
         .result-info p {
             color: #64748b;
             font-size: 0.85rem;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .result-badge {
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #1a2b4c;
         }
         
         .result-score {
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             font-weight: 800;
             color: #1a2b4c;
+            min-width: 70px;
+            text-align: center;
+        }
+        
+        /* Week Badge */
+        .week-badge {
+            background: #1a2b4c;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            display: inline-block;
         }
         
         /* Loading */
@@ -502,6 +577,16 @@
             
             .search-btn {
                 width: 100%;
+            }
+            
+            .result-item {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+            
+            .result-info p {
+                justify-content: center;
             }
         }
     </style>
@@ -662,6 +747,14 @@
             'E': 'الثاني الإعدادي'
         };
 
+        const SUBJECT_NAMES = {
+            'A': 'اللغة العربية',
+            'E': 'اللغة الإنجليزية',
+            'M': 'الرياضيات',
+            'S': 'العلوم',
+            'D': 'الدراسات الاجتماعية'
+        };
+
         // ========== State ==========
         let unsubscribeStats = null;
 
@@ -762,21 +855,49 @@
             }
         }
 
-        // ========== Leaderboard (Optimized single query) ==========
+        // ========== Leaderboard (مع حساب النقاط من النتائج) ==========
         async function loadLeaderboard() {
             try {
-                // ✅ Single query: orderBy totalScore descending, limit 20
+                // ✅ جلب جميع النتائج أولاً
+                const resultsRef = collection(db, 'results');
+                const resultsSnap = await getDocs(resultsRef);
+                
+                // حساب إجمالي النقاط لكل طالب من النتائج
+                const studentScores = {};
+                resultsSnap.forEach(doc => {
+                    const result = doc.data();
+                    const studentCode = result.studentCode;
+                    const score = result.score || 0;
+                    
+                    if (!studentScores[studentCode]) {
+                        studentScores[studentCode] = 0;
+                    }
+                    studentScores[studentCode] += score;
+                });
+
+                // جلب بيانات الطلاب
                 const studentsRef = collection(db, 'students');
-                const q = query(studentsRef, orderBy('totalScore', 'desc'), limit(20));
-                const snapshot = await getDocs(q);
+                const studentsSnap = await getDocs(studentsRef);
+                
+                const students = [];
+                studentsSnap.forEach(doc => {
+                    const student = doc.data();
+                    const calculatedTotal = studentScores[student.code] || 0;
+                    
+                    students.push({
+                        ...student,
+                        calculatedTotalScore: calculatedTotal,
+                        lastExamDate: student.lastExamDate || null
+                    });
+                });
 
-                const topStudents = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
+                // ترتيب حسب النقاط المحسوبة
+                const sortedStudents = students.sort((a, b) => 
+                    (b.calculatedTotalScore || 0) - (a.calculatedTotalScore || 0)
+                ).slice(0, 20);
 
-                renderPodium(topStudents.slice(0, 3));
-                renderLeaderboardTable(topStudents);
+                renderPodium(sortedStudents.slice(0, 3));
+                renderLeaderboardTable(sortedStudents);
 
             } catch (error) {
                 console.error('Error loading leaderboard:', error);
@@ -803,7 +924,7 @@
                         <div class="rank-badge">${medals[index]}</div>
                         <div class="student-name">${student.name || 'طالب'}</div>
                         <div class="student-grade">${GRADE_NAMES[student.gradeLetter] || student.gradeLetter}</div>
-                        <div class="student-score">${student.totalScore || 0}</div>
+                        <div class="student-score">${student.calculatedTotalScore || 0}</div>
                         <div class="student-code">${student.code || student.id}</div>
                     </div>
                 `;
@@ -831,7 +952,7 @@
                         <td><strong>#${index + 1}</strong></td>
                         <td>${student.name || 'طالب'}</td>
                         <td>${GRADE_NAMES[student.gradeLetter] || student.gradeLetter}</td>
-                        <td><strong>${student.totalScore || 0}</strong></td>
+                        <td><strong>${student.calculatedTotalScore || 0}</strong></td>
                         <td>${lastExam}</td>
                     </tr>
                 `;
@@ -870,19 +991,21 @@
 
                 const student = { code: studentCode, ...studentSnap.data() };
 
-                // Get student's exam results
+                // ✅ جلب جميع نتائج الطالب (السجل التاريخي الكامل)
                 const resultsRef = collection(db, 'results');
                 const q = query(
                     resultsRef, 
                     where('studentCode', '==', studentCode),
-                    orderBy('date', 'desc'),
-                    limit(20)
+                    orderBy('date', 'desc') // الأحدث أولاً للتايم لاين
                 );
                 
                 const resultsSnap = await getDocs(q);
                 const results = resultsSnap.docs.map(doc => doc.data());
 
-                renderStudentProgress(student, results);
+                // ✅ حساب إجمالي النقاط من جميع النتائج
+                const calculatedTotalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
+
+                renderStudentProgress(student, results, calculatedTotalScore);
 
             } catch (error) {
                 console.error('Error searching student:', error);
@@ -893,10 +1016,10 @@
         };
 
         // ========== Render Student Progress ==========
-        function renderStudentProgress(student, results) {
+        function renderStudentProgress(student, results, calculatedTotalScore) {
             const container = document.getElementById('studentProgress');
             
-            // Calculate stats
+            // حساب الإحصائيات من النتائج الفعلية
             const totalExams = results.length;
             const avgScore = totalExams > 0 
                 ? (results.reduce((sum, r) => sum + (r.score || 0), 0) / totalExams).toFixed(1)
@@ -905,40 +1028,62 @@
                 ? Math.max(...results.map(r => r.score || 0))
                 : 0;
 
-            // Generate chart data
-            const chartData = results.slice().reverse().map((r, i) => ({
-                exam: `امتحان ${i + 1}`,
-                score: r.score || 0
-            }));
+            // ✅ ترتيب النتائج تصاعدياً للرسم البياني (حسب التاريخ)
+            const chartResults = [...results].reverse();
 
+            // بناء التايم لاين مع التاريخ الفعلي لكل امتحان
             let resultsHtml = '';
             results.forEach(r => {
                 const scoreClass = r.score >= 8 ? 'high' : r.score >= 5 ? 'medium' : 'low';
-                const date = new Date(r.date).toLocaleDateString('ar-EG');
+                const examDate = new Date(r.date).toLocaleDateString('ar-EG', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+                const examTime = new Date(r.date).toLocaleTimeString('ar-EG', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // ✅ عنوان الامتحان: اسم المادة - (أسبوع: رقم الأسبوع)
+                const subjectName = SUBJECT_NAMES[r.examSubject] || 'امتحان';
+                const weekNumber = r.week || '?';
                 
                 resultsHtml += `
                     <div class="result-item ${scoreClass}">
                         <div class="result-info">
-                            <h4>${SUBJECT_NAMES[r.examSubject] || 'امتحان'}</h4>
-                            <p>${date} - الأسبوع ${r.week}</p>
+                            <h4>${subjectName} - <span class="week-badge">الأسبوع ${weekNumber}</span></h4>
+                            <p>
+                                <span>📅 ${examDate}</span>
+                                <span>⏱️ ${examTime}</span>
+                                <span class="result-badge">${r.totalQuestions || 10} أسئلة</span>
+                            </p>
                         </div>
                         <div class="result-score">${r.score}/10</div>
                     </div>
                 `;
             });
 
-            // Build chart (simple bar chart using CSS)
+            // ✅ بناء الرسم البياني مع المحور الأفقي (تاريخ الامتحان)
             let chartBars = '';
-            if (chartData.length > 0) {
+            if (chartResults.length > 0) {
                 chartBars = `
-                    <div style="display: flex; align-items: flex-end; gap: 8px; height: 200px; margin: 20px 0;">
-                        ${chartData.map(d => `
-                            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;">
-                                <div style="width: 100%; background: #1a2b4c; height: ${d.score * 20}px; border-radius: 8px 8px 0 0; min-height: 4px;"></div>
-                                <span style="font-size: 0.8rem;">${d.exam}</span>
-                                <span style="font-weight: 700;">${d.score}</span>
-                            </div>
-                        `).join('')}
+                    <div class="chart-bars">
+                        ${chartResults.map((r, index) => {
+                            const examDate = new Date(r.date).toLocaleDateString('ar-EG', {
+                                month: 'short',
+                                day: 'numeric'
+                            });
+                            const barHeight = (r.score || 0) * 20; // 20px لكل نقطة (max 200px)
+                            return `
+                                <div class="chart-bar-wrapper" title="${SUBJECT_NAMES[r.examSubject]} - الأسبوع ${r.week || '?'}">
+                                    <div class="chart-bar" style="height: ${barHeight}px;"></div>
+                                    <span class="chart-label">${examDate}</span>
+                                    <span class="chart-value">${r.score}</span>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 `;
             }
@@ -954,8 +1099,8 @@
 
                 <div class="stats-grid-small">
                     <div style="background: white; padding: 15px; border-radius: 16px;">
-                        <div style="color: #64748b;">إجمالي النقاط</div>
-                        <div style="font-size: 1.8rem; font-weight: 800; color: #1a2b4c;">${student.totalScore || 0}</div>
+                        <div style="color: #64748b;">إجمالي النقاط (محسوب)</div>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: #1a2b4c;">${calculatedTotalScore}</div>
                     </div>
                     <div style="background: white; padding: 15px; border-radius: 16px;">
                         <div style="color: #64748b;">عدد الامتحانات</div>
@@ -971,14 +1116,14 @@
                     </div>
                 </div>
 
-                ${chartData.length > 0 ? `
+                ${chartResults.length > 0 ? `
                     <div class="chart-container">
-                        <h4 style="margin-bottom: 15px;">📈 تقدم الدرجات</h4>
+                        <h4 style="margin-bottom: 15px;">📈 تقدم الدرجات عبر الزمن</h4>
                         ${chartBars}
                     </div>
                 ` : ''}
 
-                <h4 style="margin: 20px 0 10px;">📋 نتائج الامتحانات</h4>
+                <h4 style="margin: 20px 0 10px;">📋 السجل التاريخي للامتحانات</h4>
                 <div class="results-timeline">
                     ${resultsHtml || '<p style="text-align: center; color: #64748b;">لا توجد نتائج سابقة</p>'}
                 </div>
@@ -993,15 +1138,6 @@
             loadLeaderboard().finally(hideLoading);
             loadQuickStats();
             showAlert('✅ تم تحديث البيانات', 'success');
-        };
-
-        // ========== Subject Names ==========
-        const SUBJECT_NAMES = {
-            'A': 'اللغة العربية',
-            'E': 'اللغة الإنجليزية',
-            'M': 'الرياضيات',
-            'S': 'العلوم',
-            'D': 'الدراسات الاجتماعية'
         };
 
         // ========== Auto-refresh date every minute ==========
