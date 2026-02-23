@@ -429,7 +429,7 @@
         <!-- هيدر المدرسة -->
         <div class="school-header">
             <h1>📚 مدرسة الجيل الجديد الخاصة</h1>
-            <div class="sub">نظام الامتحانات الإلكترونية</div>
+            <div class="sub">نظام الامتحانات الإلكترونية - الامتحان الواحد النشط</div>
         </div>
 
         <!-- شريط التحميل -->
@@ -467,16 +467,22 @@
             <!-- معلومات المدرس -->
             <div class="teacher-info" id="teacherInfo"></div>
 
-            <!-- اختيار الأسبوع -->
-            <div class="input-group">
-                <label>📅 اختر الأسبوع</label>
-                <select id="weekSelect" onchange="handleWeekChange()">
-                    <option value="">-- اختر الأسبوع --</option>
-                </select>
+            <!-- معلومات الأسبوع التلقائي -->
+            <div class="teacher-info" style="background: #e8f4fd; margin-bottom: 20px;">
+                <div class="teacher-info-item">
+                    <span class="teacher-info-label">📅 الأسبوع الحالي:</span>
+                    <span class="teacher-info-value" id="currentWeekDisplay">جاري الحساب...</span>
+                </div>
+                <div class="teacher-info-item">
+                    <span class="teacher-info-label">⏱️ آخر تحديث:</span>
+                    <span class="teacher-info-value" id="lastUpdatedDisplay">لم يتم الحفظ بعد</span>
+                </div>
             </div>
 
             <!-- حاوية الأسئلة (ديناميكية) -->
-            <div id="questionsContainer" class="questions-container"></div>
+            <div id="questionsContainer" class="questions-container">
+                <div style="text-align: center; color: #666; padding: 20px;">جاري تحميل الامتحان الحالي...</div>
+            </div>
 
             <!-- أزرار التحكم -->
             <button class="btn btn-success" onclick="addNewQuestion()">
@@ -491,9 +497,9 @@
                 <span>🚪</span> تسجيل خروج
             </button>
 
-            <!-- الامتحانات السابقة -->
+            <!-- الامتحانات السابقة (نسخ سابقة) -->
             <div style="margin-top: 30px;">
-                <h4 style="margin-bottom: 15px; color: #333;">📋 الامتحانات السابقة</h4>
+                <h4 style="margin-bottom: 15px; color: #333;">📋 النسخ السابقة</h4>
                 <div id="prevExamsList" class="prev-exams-grid"></div>
             </div>
         </div>
@@ -515,7 +521,8 @@
             query, 
             where,
             orderBy,
-            limit 
+            limit,
+            deleteDoc
         } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
         // إعدادات Firebase
@@ -567,6 +574,14 @@
             setTimeout(() => alertDiv.innerHTML = '', 5000);
         };
 
+        // ==================== حساب رقم الأسبوع في السنة ====================
+        function getWeekNumber() {
+            const today = new Date();
+            const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
+            const pastDaysOfYear = (today - firstDayOfYear) / 86400000;
+            return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+        }
+
         // ==================== تسجيل الدخول الذكي ====================
         window.login = async function() {
             const code = document.getElementById('teacherCode').value.trim().toUpperCase();
@@ -585,7 +600,6 @@
             showLoading();
 
             try {
-                // ✅ الاستعلام المباشر باستخدام Document ID
                 const teacherRef = doc(db, 'teachers', code);
                 const teacherSnap = await getDoc(teacherRef);
 
@@ -618,8 +632,13 @@
             document.getElementById('examSection').style.display = 'block';
 
             displayTeacherInfo();
-            setupWeeks();
-            loadPreviousExams();
+            
+            // عرض رقم الأسبوع الحالي
+            const currentWeek = getWeekNumber();
+            document.getElementById('currentWeekDisplay').textContent = `الأسبوع ${currentWeek}`;
+            
+            // تحميل الامتحان الحالي تلقائياً
+            loadCurrentExam();
             
             showToast(`مرحباً بك يا أستاذ ${subjects[currentTeacher.subjectLetter]}`);
         }
@@ -641,59 +660,53 @@
             `;
         }
 
-        // ==================== تجهيز أسابيع الامتحان ====================
-        function setupWeeks() {
-            const weekSelect = document.getElementById('weekSelect');
-            weekSelect.innerHTML = '<option value="">-- اختر الأسبوع --</option>';
+        // ==================== تحميل الامتحان الحالي تلقائياً ====================
+        async function loadCurrentExam() {
+            if (!currentTeacher) return;
             
-            for (let i = 1; i <= 12; i++) {
-                const option = document.createElement('option');
-                option.value = i;
-                
-                const today = new Date();
-                const startDate = new Date(today);
-                startDate.setDate(today.getDate() + ((i - 1) * 7));
-                const endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + 6);
-                
-                option.textContent = `الأسبوع ${i} (${startDate.toLocaleDateString('ar-EG')} - ${endDate.toLocaleDateString('ar-EG')})`;
-                weekSelect.appendChild(option);
-            }
-        }
-
-        // ==================== التعامل مع تغيير الأسبوع ====================
-        window.handleWeekChange = async function() {
-            const week = document.getElementById('weekSelect').value;
-            if (!week) {
-                clearQuestions();
-                return;
-            }
-
             showLoading();
-
+            
             try {
-                // ✅ إنشاء Document ID الموحد: [Stage]_[Subject]_[Week]
-                const examId = `${currentTeacher.grade}_${currentTeacher.subjectLetter}_W${week}`;
+                // المعرف الثابت: Grade_Subject
+                const examId = `${currentTeacher.grade}_${currentTeacher.subjectLetter}`;
+                console.log('🔍 البحث عن الامتحان الحالي:', examId);
+                
                 const examRef = doc(db, 'exams', examId);
                 const examSnap = await getDoc(examRef);
 
                 if (examSnap.exists()) {
-                    // امتحان موجود - تحميل البيانات
                     const examData = examSnap.data();
-                    displayQuestions(examData.questions || []);
-                    showToast('تم تحميل الامتحان');
+                    console.log('✅ تم العثور على امتحان:', examData);
+                    
+                    // عرض الأسئلة
+                    if (examData.questions && examData.questions.length > 0) {
+                        displayQuestions(examData.questions);
+                        
+                        // عرض آخر تحديث
+                        if (examData.updatedAt) {
+                            const lastUpdate = new Date(examData.updatedAt).toLocaleString('ar-EG');
+                            document.getElementById('lastUpdatedDisplay').textContent = lastUpdate;
+                        }
+                        
+                        showToast('📋 تم تحميل الامتحان الحالي');
+                    } else {
+                        clearQuestions();
+                    }
                 } else {
-                    // امتحان جديد - التحقق من وجود مسودة
-                    checkForDraft(week);
+                    console.log('📭 لا يوجد امتحان محفوظ لهذه المادة والمرحلة');
+                    clearQuestions();
+                    
+                    // التحقق من وجود مسودة محلية
+                    checkForDraft();
                 }
             } catch (error) {
-                console.error('خطأ في تحميل الامتحان:', error);
-                showAlert('❌ حدث خطأ في تحميل الامتحان', 'error');
+                console.error('❌ خطأ في تحميل الامتحان:', error);
+                showAlert('حدث خطأ في تحميل الامتحان', 'error');
                 clearQuestions();
             }
-
+            
             hideLoading();
-        };
+        }
 
         // ==================== عرض الأسئلة ====================
         function displayQuestions(questions) {
@@ -714,6 +727,9 @@
         }
 
         function generateQuestionHTML(question, index) {
+            // التأكد من وجود الخيارات
+            const options = question.options || ['', '', '', ''];
+            
             return `
                 <div class="question-box" data-question-index="${index - 1}">
                     <div class="question-header">
@@ -721,24 +737,24 @@
                         <button class="delete-question" onclick="deleteQuestion(${index - 1})">×</button>
                     </div>
                     
-                    <input type="text" class="question-input question-text" value="${question.text || ''}" placeholder="أكتب السؤال هنا...">
+                    <input type="text" class="question-input question-text" value="${(question.text || '').replace(/"/g, '&quot;')}" placeholder="أكتب السؤال هنا...">
                     
                     <div class="options-grid">
                         <div class="option-item">
                             <label>الاختيار الأول</label>
-                            <input type="text" class="option-input" data-option="0" value="${question.options?.[0] || ''}" placeholder="الاختيار الأول">
+                            <input type="text" class="option-input" data-option="0" value="${(options[0] || '').replace(/"/g, '&quot;')}" placeholder="الاختيار الأول">
                         </div>
                         <div class="option-item">
                             <label>الاختيار الثاني</label>
-                            <input type="text" class="option-input" data-option="1" value="${question.options?.[1] || ''}" placeholder="الاختيار الثاني">
+                            <input type="text" class="option-input" data-option="1" value="${(options[1] || '').replace(/"/g, '&quot;')}" placeholder="الاختيار الثاني">
                         </div>
                         <div class="option-item">
                             <label>الاختيار الثالث</label>
-                            <input type="text" class="option-input" data-option="2" value="${question.options?.[2] || ''}" placeholder="الاختيار الثالث">
+                            <input type="text" class="option-input" data-option="2" value="${(options[2] || '').replace(/"/g, '&quot;')}" placeholder="الاختيار الثالث">
                         </div>
                         <div class="option-item">
                             <label>الاختيار الرابع</label>
-                            <input type="text" class="option-input" data-option="3" value="${question.options?.[3] || ''}" placeholder="الاختيار الرابع">
+                            <input type="text" class="option-input" data-option="3" value="${(options[3] || '').replace(/"/g, '&quot;')}" placeholder="الاختيار الرابع">
                         </div>
                     </div>
                     
@@ -773,10 +789,12 @@
 
         // ==================== حذف سؤال ====================
         window.deleteQuestion = function(index) {
-            const questions = collectQuestionsFromDOM();
-            questions.splice(index, 1);
-            displayQuestions(questions);
-            triggerAutoSave();
+            if (confirm('هل أنت متأكد من حذف هذا السؤال؟')) {
+                const questions = collectQuestionsFromDOM();
+                questions.splice(index, 1);
+                displayQuestions(questions);
+                triggerAutoSave();
+            }
         };
 
         // ==================== جمع الأسئلة من DOM ====================
@@ -814,15 +832,13 @@
         }
 
         function saveToLocalStorage() {
-            const week = document.getElementById('weekSelect').value;
-            if (!week || !currentTeacher) return;
+            if (!currentTeacher) return;
 
             const questions = collectQuestionsFromDOM();
             if (questions.length === 0) return;
 
             const draft = {
                 teacherCode: currentTeacher.code,
-                week: week,
                 questions: questions,
                 lastSaved: new Date().toISOString()
             };
@@ -836,7 +852,7 @@
             }, 2000);
         }
 
-        function checkForDraft(week) {
+        function checkForDraft() {
             const savedDraft = localStorage.getItem(STORAGE_KEY);
             if (!savedDraft) {
                 clearQuestions();
@@ -845,7 +861,8 @@
 
             try {
                 const draft = JSON.parse(savedDraft);
-                if (draft.teacherCode === currentTeacher.code && draft.week === week) {
+                
+                if (draft.teacherCode === currentTeacher.code) {
                     if (confirm('📝 يوجد مسودة محفوظة. هل تريد استعادتها؟')) {
                         displayQuestions(draft.questions);
                         showToast('تم استعادة المسودة');
@@ -862,17 +879,12 @@
 
         function clearQuestions() {
             document.getElementById('questionsContainer').innerHTML = 
-                '<div style="text-align: center; color: #666; padding: 20px;">اختر أسبوعاً لبدء إنشاء الامتحان</div>';
+                '<div style="text-align: center; color: #666; padding: 20px;">لا توجد أسئلة. أضف سؤالاً جديداً</div>';
         }
 
-        // ==================== حفظ الامتحان في Firebase ====================
+        // ==================== حفظ الامتحان في Firebase (باستخدام setDoc مع معرف ثابت) ====================
         window.saveExam = async function() {
-            const week = document.getElementById('weekSelect').value;
-            
-            if (!week) {
-                showAlert('❌ من فضلك اختر الأسبوع أولاً', 'error');
-                return;
-            }
+            if (!currentTeacher) return;
 
             const questions = collectQuestionsFromDOM();
             
@@ -894,35 +906,54 @@
                 }
             }
 
+            // رسالة تأكيد قبل الحفظ (الاستبدال)
+            const confirmSave = confirm('⚠️ تنبيه: حفظ هذا الامتحان سيستبدل النسخة السابقة لهذه المادة والمرحلة. هل أنت متأكد؟');
+            
+            if (!confirmSave) {
+                showToast('تم إلغاء الحفظ');
+                return;
+            }
+
             showLoading();
 
             try {
-                // ✅ استخدام Document ID الموحد
-                const examId = `${currentTeacher.grade}_${currentTeacher.subjectLetter}_W${week}`;
+                // حساب رقم الأسبوع الحالي تلقائياً
+                const currentWeek = getWeekNumber();
+                
+                // المعرف الثابت: Grade_Subject
+                const examId = `${currentTeacher.grade}_${currentTeacher.subjectLetter}`;
                 const examRef = doc(db, 'exams', examId);
                 
-                await setDoc(examRef, {
+                // تجهيز بيانات الامتحان مع جميع الحقول المطلوبة
+                const examData = {
                     examId: examId,
                     teacherCode: currentTeacher.code,
                     subject: currentTeacher.subjectLetter,
                     subjectName: subjects[currentTeacher.subjectLetter],
                     grade: currentTeacher.grade,
                     gradeName: grades[currentTeacher.grade],
-                    week: week,
+                    week: currentWeek,                     // رقم الأسبوع الحالي تلقائياً
                     questions: questions,
                     createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),    // وقت التحديث الحالي
+                    status: "active",                       // حالة الامتحان
                     isActive: true
-                });
+                };
+
+                // حفظ البيانات (سيتم استبدال أي مستند موجود بنفس المعرف)
+                await setDoc(examRef, examData);
 
                 // مسح المسودة بعد الحفظ الناجح
                 localStorage.removeItem(STORAGE_KEY);
                 
+                // تحديث عرض آخر تحديث
+                document.getElementById('lastUpdatedDisplay').textContent = new Date().toLocaleString('ar-EG');
+                
                 showToast('✅ تم حفظ الامتحان بنجاح');
                 showAlert('✅ تم حفظ الامتحان في قاعدة البيانات', 'success');
                 
-                // تحديث قائمة الامتحانات السابقة
-                loadPreviousExams();
+                // تحديث قائمة النسخ السابقة
+                loadPreviousExamVersions();
 
             } catch (error) {
                 console.error('خطأ في حفظ الامتحان:', error);
@@ -932,65 +963,31 @@
             hideLoading();
         };
 
-        // ==================== تحميل الامتحانات السابقة ====================
-        async function loadPreviousExams() {
+        // ==================== تحميل النسخ السابقة (لأغراض أرشيفية) ====================
+        async function loadPreviousExamVersions() {
             if (!currentTeacher) return;
 
             try {
-                const examsRef = collection(db, 'exams');
-                const q = query(
-                    examsRef,
-                    where('teacherCode', '==', currentTeacher.code),
-                    orderBy('week', 'desc'),
-                    limit(10)
-                );
-
-                const snapshot = await getDocs(q);
+                // هنا يمكن إنشاء مجموعة منفصلة للنسخ السابقة إذا أردت
+                // حالياً سنعرض الامتحان الحالي فقط مع إمكانية عرض نسخ سابقة من مجموعة منفصلة
+                
                 const listElement = document.getElementById('prevExamsList');
                 
-                if (snapshot.empty) {
-                    listElement.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 20px;">لا توجد امتحانات سابقة</div>';
-                    return;
-                }
-
-                let html = '';
-                snapshot.forEach(doc => {
-                    const exam = doc.data();
-                    html += `
-                        <div class="prev-exam-card" onclick="loadExamById('${doc.id}')">
-                            <span class="prev-exam-week">الأسبوع ${exam.week}</span>
-                            <span class="prev-exam-date">${new Date(exam.updatedAt || exam.createdAt).toLocaleDateString('ar-EG')}</span>
-                            <span style="font-size: 0.8rem; color: #28a745; display: block; margin-top: 5px;">${exam.questions?.length || 0} أسئلة</span>
-                        </div>
-                    `;
-                });
-
-                listElement.innerHTML = html;
+                // عرض الامتحان الحالي
+                const currentWeek = getWeekNumber();
+                
+                listElement.innerHTML = `
+                    <div class="prev-exam-card" onclick="loadCurrentExam()">
+                        <span class="prev-exam-week">الامتحان الحالي - الأسبوع ${currentWeek}</span>
+                        <span class="prev-exam-date">${new Date().toLocaleDateString('ar-EG')}</span>
+                        <span style="font-size: 0.8rem; color: #28a745; display: block; margin-top: 5px;">اضغط للتحميل</span>
+                    </div>
+                `;
 
             } catch (error) {
-                console.error('خطأ في تحميل الامتحانات السابقة:', error);
+                console.error('خطأ في تحميل النسخ السابقة:', error);
             }
         }
-
-        // ==================== تحميل امتحان معين ====================
-        window.loadExamById = async function(examId) {
-            showLoading();
-            try {
-                const examRef = doc(db, 'exams', examId);
-                const examSnap = await getDoc(examRef);
-                
-                if (examSnap.exists()) {
-                    const examData = examSnap.data();
-                    document.getElementById('weekSelect').value = examData.week;
-                    displayQuestions(examData.questions || []);
-                    showToast('تم تحميل الامتحان');
-                }
-            } catch (error) {
-                console.error('خطأ في تحميل الامتحان:', error);
-                showAlert('❌ حدث خطأ', 'error');
-            }
-            hideLoading();
-        };
 
         // ==================== تسجيل الخروج ====================
         window.logout = function() {
@@ -1001,6 +998,10 @@
             document.getElementById('loginSection').style.display = 'block';
             document.getElementById('examSection').style.display = 'none';
             document.getElementById('teacherCode').value = '';
+            
+            // إفراغ واجهة الأسئلة تماماً
+            clearQuestions();
+            document.getElementById('lastUpdatedDisplay').textContent = 'لم يتم الحفظ بعد';
             
             showToast('👋 تم تسجيل الخروج');
         };
@@ -1024,14 +1025,13 @@
 
         // جعل الدوال متاحة عالمياً
         window.login = login;
-        window.handleWeekChange = handleWeekChange;
         window.addNewQuestion = addNewQuestion;
         window.deleteQuestion = deleteQuestion;
         window.saveExam = saveExam;
         window.logout = logout;
-        window.loadExamById = loadExamById;
+        window.loadCurrentExam = loadCurrentExam;
 
-        console.log('✅ صفحة المدرس جاهزة مع الهيكلية الجديدة');
+        console.log('✅ صفحة المدرس جاهزة مع نظام الامتحان الواحد النشط');
     </script>
 </body>
 </html>
