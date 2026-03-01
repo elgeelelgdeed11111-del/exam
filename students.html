@@ -288,6 +288,11 @@
             font-size: 0.9rem;
         }
 
+        .option-item:hover {
+            background: #f1f5f9;
+            border-color: var(--primary);
+        }
+
         .option-item.selected {
             background: var(--primary);
             border-color: var(--primary);
@@ -408,15 +413,30 @@
         .timer {
             background: var(--dark);
             color: white;
-            padding: 8px 15px;
+            padding: 15px;
             border-radius: 50px;
-            font-size: 1rem;
+            font-size: 1.5rem;
             font-weight: 700;
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
         }
 
-        .timer.warning {
+        .timer.warning-yellow {
+            background: #f39c12;
+            animation: none;
+        }
+
+        .timer.warning-orange {
+            background: #e67e22;
+            animation: none;
+        }
+
+        .timer.warning-red {
             background: var(--danger);
             animation: pulse 1s infinite;
         }
@@ -497,6 +517,11 @@
                 padding: 14px 8px;
                 font-size: 0.95rem;
             }
+            
+            .timer {
+                font-size: 1.2rem;
+                padding: 12px;
+            }
         }
     </style>
 </head>
@@ -558,12 +583,11 @@
                 <span id="examStatusText" style="color: var(--primary);"></span>
             </div>
 
-            <div class="timer" id="timer">60:00</div>
+            <div class="timer" id="timer">20:00</div>
             <div class="exam-status" id="examStatus"></div>
             <div id="questionsContainer" class="questions-container"></div>
 
             <div class="action-buttons">
-                <button class="btn btn-primary" onclick="startExam()" id="startBtn" style="display: none;">▶️ بدء الامتحان</button>
                 <button class="btn btn-success" onclick="submitExam()" id="submitBtn" style="display: none;">✅ تسليم الامتحان</button>
                 <button class="btn btn-danger" onclick="logout()" id="logoutBtn">🚪 خروج</button>
             </div>
@@ -667,6 +691,7 @@
         let studentAnswers = {};
         let examStartTime = null;
         let timerInterval = null;
+        let timeLeft = 20 * 60; // 20 دقيقة
         
         // ==================== دوال مساعدة ====================
         const showLoading = () => document.getElementById('loadingBar').style.display = 'block';
@@ -703,7 +728,7 @@
             document.getElementById('savedCodeHint').style.display = 'none';
         };
 
-        // ==================== تسجيل الدخول ====================
+        // ==================== تسجيل الدخول والبدء التلقائي ====================
         window.login = async function() {
             const code = document.getElementById('studentCode').value.trim().toUpperCase();
             
@@ -733,7 +758,10 @@
                     localStorage.setItem('studentCode', code);
                     
                     displayStudentInfo();
+                    
+                    // ✅ البدء التلقائي: بعد عرض المعلومات، نبحث عن الامتحان ونبدأه فوراً
                     await findTodayExam();
+                    
                 } else {
                     showAlert('❌ الكود غير صحيح أو غير مسجل', 'danger');
                 }
@@ -756,18 +784,17 @@
             document.getElementById('savedCodeHint').style.display = 'none';
         }
 
-        // ==================== ✅ دالة جلب الامتحان باستخدام المعرف الثابت ====================
+        // ==================== ✅ دالة جلب الامتحان ====================
         async function findTodayExam() {
             const today = new Date();
-            const dayOfWeek = today.getDay(); // 0 الأحد, 1 الإثنين, 2 الثلاثاء, 3 الأربعاء, 4 الخميس, 5 الجمعة, 6 السبت
+            const dayOfWeek = today.getDay();
             
-            // التحقق من الإجازات (الجمعة والسبت)
+            // التحقق من الإجازات
             if (dayOfWeek === 5 || dayOfWeek === 6) {
                 showHolidayMessage(dayOfWeek);
                 return;
             }
 
-            // التحقق من وجود مادة لهذا اليوم
             if (!SUBJECT_SCHEDULE.hasOwnProperty(dayOfWeek)) {
                 showExamStatus('لا يوجد امتحان اليوم', 'warning');
                 return;
@@ -778,15 +805,13 @@
             showLoading();
 
             try {
-                // ✅ استخدام المعرف الثابت مباشرة: [Grade]_[Subject]
                 const examId = `${currentStudent.grade}_${todaySubject}`;
-                console.log('🔍 البحث عن الامتحان بالمعرف الثابت:', examId);
+                console.log('🔍 البحث عن الامتحان:', examId);
                 
                 const examRef = doc(db, 'exams', examId);
                 const examSnap = await getDoc(examRef);
 
                 if (!examSnap.exists()) {
-                    console.log('📭 لا يوجد امتحان لهذا المعرف');
                     showExamStatus('لا يوجد امتحان متاح حالياً للمادة المحددة', 'warning');
                     hideLoading();
                     return;
@@ -794,25 +819,22 @@
 
                 const examData = examSnap.data();
                 
-                // ✅ التحقق من حالة الامتحان (isActive)
                 if (examData.isActive === false) {
-                    showExamStatus('⚠️ الامتحان غير نشط حالياً - يرجى مراجعة المدرس', 'warning');
+                    showExamStatus('⚠️ الامتحان غير نشط حالياً', 'warning');
                     hideLoading();
                     return;
                 }
 
-                // ✅ حفظ بيانات الامتحان مع رقم الأسبوع
                 currentExam = examData;
-                currentExamId = examId; // المعرف الثابت
-                currentExamWeek = examData.week || '?'; // رقم الأسبوع من بيانات الامتحان
+                currentExamId = examId;
+                currentExamWeek = examData.week || '?';
 
-                // عرض معلومات الامتحان
                 document.getElementById('examSubject').textContent = SUBJECT_NAMES[todaySubject];
                 document.getElementById('examDay').textContent = DAY_NAMES[dayOfWeek];
                 document.getElementById('examWeek').textContent = `الأسبوع ${currentExamWeek}`;
                 document.getElementById('examStatusText').textContent = 'الامتحان متاح';
 
-                // ✅ التحقق مما إذا كان الطالب قد أدى هذا الامتحان مسبقاً
+                // ✅ التحقق من الامتحان السابق ثم البدء التلقائي
                 await checkIfExamined();
 
             } catch (error) {
@@ -843,16 +865,13 @@
                 </div>
             `;
             
-            document.getElementById('startBtn').style.display = 'none';
             document.getElementById('submitBtn').style.display = 'none';
             document.getElementById('questionsContainer').innerHTML = '';
         }
 
-        // ==================== ✅ التحقق من تكرار الامتحان (باستخدام المعرف الثابت + رقم الأسبوع) ====================
+        // ==================== ✅ التحقق من تكرار الامتحان ====================
         async function checkIfExamined() {
-            // ✅ المعرف الفريد للنتيجة: [studentCode]_G[grade]_S[subject]_W[week]
             const resultId = `${currentStudent.code}_G${currentStudent.grade}_S${currentExam.subject}_W${currentExamWeek}`;
-            console.log('🔍 التحقق من النتيجة بالمعرف:', resultId);
             
             try {
                 const resultRef = doc(db, 'results', resultId);
@@ -860,14 +879,10 @@
 
                 if (resultSnap.exists()) {
                     const previousResult = resultSnap.data();
-                    console.log('✅ تم العثور على نتيجة سابقة:', previousResult);
                     showPreviousResult(previousResult);
                 } else {
-                    console.log('📭 لا توجد نتيجة سابقة - يمكن البدء');
-                    document.getElementById('startBtn').style.display = 'block';
-                    document.getElementById('submitBtn').style.display = 'none';
-                    document.getElementById('examStatus').style.display = 'none';
-                    displayExamQuestions(true);
+                    // ✅ بدء الامتحان تلقائياً
+                    startExam();
                 }
             } catch (error) {
                 console.error('خطأ في التحقق من الامتحان السابق:', error);
@@ -882,12 +897,29 @@
                 <strong>درجتك: ${result.score}/${result.totalQuestions}</strong>
             `;
             
-            document.getElementById('startBtn').style.display = 'none';
             document.getElementById('submitBtn').style.display = 'none';
             
             displayExamQuestions(true, result.answers);
             showResultCard(result);
         }
+
+        // ==================== ✅ بدء الامتحان التلقائي ====================
+        window.startExam = function() {
+            document.getElementById('submitBtn').style.display = 'block';
+            
+            displayExamQuestions(false);
+            startTimer(20); // 20 دقيقة
+            examStartTime = Date.now();
+            loadFromLocalStorage();
+            
+            // تمرير تلقائي لأول سؤال
+            setTimeout(() => {
+                const firstQuestion = document.querySelector('.question-item');
+                if (firstQuestion) {
+                    firstQuestion.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 500);
+        };
 
         function displayExamQuestions(disabled = false, previousAnswers = {}) {
             if (!currentExam || !currentExam.questions) return;
@@ -914,13 +946,13 @@
                     const isSelected = previousAnswer === optNum;
                     
                     html += `
-                        <label class="option-item ${isSelected ? 'selected' : ''}" 
+                        <div class="option-item ${isSelected ? 'selected' : ''}" 
                                onclick="${disabled ? '' : `selectOption(${qNum}, ${optNum})`}"
                                id="q${qNum}_opt${optNum}">
                             <input type="radio" name="q${qNum}" value="${optNum}" ${isSelected ? 'checked' : ''} ${disabled ? 'disabled' : ''}>
                             <span class="option-letter">${letter}</span>
                             <span>${opt}</span>
-                        </label>
+                        </div>
                     `;
                 });
 
@@ -950,18 +982,9 @@
             saveToLocalStorage();
         };
 
-        window.startExam = function() {
-            document.getElementById('startBtn').style.display = 'none';
-            document.getElementById('submitBtn').style.display = 'block';
-            
-            displayExamQuestions(false);
-            startTimer(60);
-            examStartTime = Date.now();
-            loadFromLocalStorage();
-        };
-
+        // ==================== ✅ نظام المؤقت الذكي (20 دقيقة) ====================
         function startTimer(minutes) {
-            let timeLeft = minutes * 60;
+            timeLeft = minutes * 60;
             const timerEl = document.getElementById('timer');
             
             if (timerInterval) clearInterval(timerInterval);
@@ -973,10 +996,18 @@
                 const secs = timeLeft % 60;
                 timerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
                 
-                if (timeLeft < 300) {
-                    timerEl.classList.add('warning');
+                // مؤثرات بصرية ذكية
+                timerEl.classList.remove('warning-yellow', 'warning-orange', 'warning-red');
+                
+                if (timeLeft <= 60) { // آخر دقيقة
+                    timerEl.classList.add('warning-red');
+                } else if (timeLeft <= 120) { // آخر دقيقتين
+                    timerEl.classList.add('warning-orange');
+                } else if (timeLeft <= 300) { // آخر 5 دقائق
+                    timerEl.classList.add('warning-yellow');
                 }
                 
+                // ✅ التسليم التلقائي عند انتهاء الوقت
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     submitExam();
@@ -984,7 +1015,6 @@
             }, 1000);
         }
 
-        // ==================== ✅ حفظ المسودة برقم الأسبوع ====================
         function saveToLocalStorage() {
             const draft = {
                 examId: currentExamId,
@@ -995,7 +1025,6 @@
             localStorage.setItem(`exam_draft_${currentStudent.code}_W${currentExamWeek}`, JSON.stringify(draft));
         }
 
-        // ==================== ✅ تحميل المسودة برقم الأسبوع ====================
         function loadFromLocalStorage() {
             const saved = localStorage.getItem(`exam_draft_${currentStudent.code}_W${currentExamWeek}`);
             if (saved) {
@@ -1012,7 +1041,6 @@
                                 if (radio) radio.checked = true;
                             }
                         });
-                        console.log('✅ تم تحميل المسودة المحلية');
                     }
                 } catch (e) {
                     console.error('خطأ في تحميل المسودة:', e);
@@ -1020,9 +1048,11 @@
             }
         }
 
-        // ==================== ✅ تسليم الامتحان (باستخدام المعرف الفريد مع رقم الأسبوع) ====================
+        // ==================== ✅ تسليم الامتحان ====================
         window.submitExam = async function() {
             const totalQuestions = currentExam.questions.length;
+            
+            // التحقق من الإجابة على جميع الأسئلة
             for (let i = 1; i <= totalQuestions; i++) {
                 if (!studentAnswers[i]) {
                     showAlert(`❌ من فضلك أجب على السؤال ${i}`, 'danger');
@@ -1044,9 +1074,7 @@
                 const monthlyPoints = score + (score === totalQuestions ? 1 : 0);
                 const batch = writeBatch(db);
                 
-                // ✅ المعرف الفريد للنتيجة: [studentCode]_G[grade]_S[subject]_W[week]
                 const resultId = `${currentStudent.code}_G${currentStudent.grade}_S${currentExam.subject}_W${currentExamWeek}`;
-                console.log('💾 حفظ النتيجة بالمعرف:', resultId);
                 
                 const resultRef = doc(db, 'results', resultId);
                 
@@ -1059,7 +1087,7 @@
                     examSubjectName: SUBJECT_NAMES[currentExam.subject],
                     grade: currentStudent.grade,
                     gradeLetter: currentStudent.gradeLetter,
-                    week: currentExamWeek, // رقم الأسبوع من الامتحان
+                    week: currentExamWeek,
                     score: score,
                     totalQuestions: totalQuestions,
                     monthlyPoints: monthlyPoints,
@@ -1082,7 +1110,6 @@
 
                 await batch.commit();
 
-                // ✅ مسح المسودة الخاصة بهذا الامتحان فقط
                 localStorage.removeItem(`exam_draft_${currentStudent.code}_W${currentExamWeek}`);
                 
                 if (timerInterval) clearInterval(timerInterval);
@@ -1106,7 +1133,6 @@
         function showResultCard(result) {
             document.getElementById('submitBtn').style.display = 'none';
             document.getElementById('questionsContainer').style.display = 'none';
-            document.getElementById('timer').style.display = 'none';
             
             document.getElementById('resultScore').textContent = `${result.score}/${result.totalQuestions}`;
             document.getElementById('resultMessage').textContent = `درجتك: ${result.score} من ${result.totalQuestions}`;
@@ -1118,8 +1144,6 @@
         window.showExamAgain = function() {
             document.getElementById('resultCard').style.display = 'none';
             document.getElementById('questionsContainer').style.display = 'block';
-            document.getElementById('timer').style.display = 'block';
-            document.getElementById('startBtn').style.display = 'none';
             document.getElementById('submitBtn').style.display = 'none';
             document.getElementById('examStatus').style.display = 'block';
         };
@@ -1129,7 +1153,6 @@
             statusEl.style.display = 'block';
             statusEl.className = `exam-status alert-${type}`;
             statusEl.innerHTML = message;
-            document.getElementById('startBtn').style.display = 'none';
             document.getElementById('examWeek').textContent = '';
         }
 
@@ -1164,7 +1187,7 @@
         window.logout = logout;
         window.showExamAgain = showExamAgain;
 
-        console.log('✅ صفحة الطالب جاهزة مع نظام المعرفات الثابتة وحماية نتائج الأسابيع الماضية');
+        console.log('✅ صفحة الطالب جاهزة مع تجربة مستخدم محسنة');
     </script>
 </body>
 </html>
