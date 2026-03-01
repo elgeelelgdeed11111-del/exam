@@ -508,6 +508,23 @@
             margin-top: 5px;
         }
 
+        /* تنسيق رسالة الوقت غير المسموح */
+        .time-restriction-warning {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 20px;
+            text-align: center;
+            margin: 20px 0;
+            font-weight: 700;
+            border: 2px solid #f5c6cb;
+        }
+        
+        .time-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
         @media (max-width: 480px) {
             .options-grid {
                 grid-template-columns: 1fr;
@@ -728,6 +745,24 @@
             document.getElementById('savedCodeHint').style.display = 'none';
         };
 
+        // ==================== ✅ دالة التحقق من الوقت المسموح به (7 مساءً - 12 منتصف الليل) ====================
+        function isTimeAllowed() {
+            const now = new Date();
+            const currentHour = now.getHours(); // 0-23
+            const currentMinutes = now.getMinutes();
+            const currentTimeInMinutes = currentHour * 60 + currentMinutes;
+            
+            // وقت البدء: 7 مساءً (19:00)
+            const startTime = 19 * 60; // 19:00 = 1140 دقيقة
+            
+            // وقت الانتهاء: 12 منتصف الليل (00:00) لكن نحتاج للتعامل مع اليوم التالي
+            // الوقت المسموح به هو من 19:00 حتى 23:59 (لأن 00:00 هو بداية اليوم التالي)
+            const endTime = 23 * 60 + 59; // 23:59 = 1439 دقيقة
+            
+            // التحقق: الوقت الحالي بين 19:00 و 23:59
+            return (currentTimeInMinutes >= startTime && currentTimeInMinutes <= endTime);
+        }
+
         // ==================== تسجيل الدخول والبدء التلقائي ====================
         window.login = async function() {
             const code = document.getElementById('studentCode').value.trim().toUpperCase();
@@ -786,6 +821,35 @@
 
         // ==================== ✅ دالة جلب الامتحان ====================
         async function findTodayExam() {
+            // ✅ التحقق من الوقت المسموح به أولاً
+            if (!isTimeAllowed()) {
+                const now = new Date();
+                const currentHour = now.getHours();
+                const currentMinutes = now.getMinutes();
+                
+                let timeMessage = '';
+                if (currentHour < 19) {
+                    timeMessage = 'لم يبدأ وقت الامتحان بعد. الامتحانات متاحة من 7 مساءً حتى 12 منتصف الليل.';
+                } else {
+                    timeMessage = 'انتهى وقت الامتحان. الامتحانات متاحة من 7 مساءً حتى 12 منتصف الليل.';
+                }
+                
+                document.getElementById('examStatus').style.display = 'block';
+                document.getElementById('examStatus').innerHTML = `
+                    <div class="time-restriction-warning">
+                        <div class="time-icon">⏰</div>
+                        <div style="font-size: 1.2rem; margin-bottom: 10px;">خارج وقت الامتحان</div>
+                        <p>${timeMessage}</p>
+                        <p style="font-size: 0.9rem; margin-top: 10px;">الوقت الحالي: ${currentHour.toString().padStart(2, '0')}:${currentMinutes.toString().padStart(2, '0')}</p>
+                    </div>
+                `;
+                
+                document.getElementById('submitBtn').style.display = 'none';
+                document.getElementById('questionsContainer').innerHTML = '';
+                hideLoading();
+                return;
+            }
+
             const today = new Date();
             const dayOfWeek = today.getDay();
             
@@ -1187,7 +1251,7 @@
         window.logout = logout;
         window.showExamAgain = showExamAgain;
 
-        console.log('✅ صفحة الطالب جاهزة مع تجربة مستخدم محسنة');
+        console.log('✅ صفحة الطالب جاهزة مع تجربة مستخدم محسنة وتحديد وقت الامتحان (7 مساءً - 12 منتصف الليل)');
     </script>
 </body>
 </html>
