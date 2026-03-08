@@ -665,8 +665,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // ==================== الجدول الدراسي المعدل ====================
-        // التعديل المطلوب:
+        // ==================== الجدول الدراسي ====================
         // الأحد: لغة عربية (A)
         // الإثنين: لغة إنجليزية (E)
         // الثلاثاء: علوم (S)
@@ -710,7 +709,8 @@
         let currentStudent = null;
         let currentExam = null;
         let currentExamId = null;
-        let currentExamWeek = null;
+        let currentExamWeek = 1; // قيمة افتراضية
+        let currentSubjectLetter = null;
         let studentAnswers = {};
         let examStartTime = null;
         let timerInterval = null;
@@ -751,25 +751,61 @@
             document.getElementById('savedCodeHint').style.display = 'none';
         };
 
+        // ==================== ✅ دالة جلب رقم الأسبوع الحالي من system_config ====================
+        async function fetchCurrentWeek() {
+            try {
+                const configDoc = await getDoc(doc(db, 'settings', 'system_config'));
+                if (configDoc.exists() && configDoc.data().currentWeek !== undefined) {
+                    currentExamWeek = configDoc.data().currentWeek;
+                    console.log(`✅ تم جلب الأسبوع الحالي من الإعدادات: ${currentExamWeek}`);
+                } else {
+                    console.warn('⚠️ لم يتم العثور على currentWeek في system_config. استخدام القيمة الافتراضية 1');
+                    currentExamWeek = 1;
+                }
+            } catch (error) {
+                console.error('❌ خطأ في جلب system_config:', error);
+                currentExamWeek = 1; // قيمة افتراضية
+            }
+        }
+
         // ==================== ✅ دالة التحقق من الوقت المسموح به (7 مساءً - 12 منتصف الليل) ====================
         function isTimeAllowed() {
             const now = new Date();
-            const currentHour = now.getHours(); // 0-23
+            const currentHour = now.getHours();
             const currentMinutes = now.getMinutes();
             const currentTimeInMinutes = currentHour * 60 + currentMinutes;
             
-            // وقت البدء: 7 مساءً (19:00)
-            const startTime = 19 * 60; // 19:00 = 1140 دقيقة
+            const startTime = 19 * 60; // 7 مساءً
+            const endTime = 23 * 60 + 59; // 11:59 مساءً
             
-            // وقت الانتهاء: 12 منتصف الليل (00:00) لكن نحتاج للتعامل مع اليوم التالي
-            // الوقت المسموح به هو من 19:00 حتى 23:59 (لأن 00:00 هو بداية اليوم التالي)
-            const endTime = 23 * 60 + 59; // 23:59 = 1439 دقيقة
-            
-            // التحقق: الوقت الحالي بين 19:00 و 23:59
             return (currentTimeInMinutes >= startTime && currentTimeInMinutes <= endTime);
         }
 
-        // ==================== تسجيل الدخول والبدء التلقائي ====================
+        // ==================== ✅ دالة التحقق من نتيجة سابقة (الأسبوع مهم هنا) ====================
+        async function checkPreviousResult() {
+            if (!currentStudent || !currentSubjectLetter) return null;
+            
+            // ✅ معرف النتيجة يحتوي على الأسبوع: StudentCode_G[Grade]_S[Subject]_W[WeekNumber]
+            const resultId = `${currentStudent.code}_G${currentStudent.grade}_S${currentSubjectLetter}_W${currentExamWeek}`;
+            
+            try {
+                const resultRef = doc(db, 'results', resultId);
+                const resultSnap = await getDoc(resultRef);
+                
+                if (resultSnap.exists()) {
+                    console.log(`✅ تم العثور على نتيجة للأسبوع ${currentExamWeek}`);
+                    return resultSnap.data();
+                }
+                
+                console.log(`✅ لا توجد نتيجة للأسبوع ${currentExamWeek} - يمكن البدء`);
+                return null;
+            } catch (error) {
+                console.error('❌ خطأ في التحقق من النتيجة:', error);
+                return null;
+            }
+        }
+
+        // ==================== تسجيل الدخول ====================
         window.login = async function() {
             const code = document.getElementById('studentCode').value.trim().toUpperCase();
             
@@ -800,7 +836,10 @@
                     
                     displayStudentInfo();
                     
-                    // ✅ البدء التلقائي: بعد عرض المعلومات، نبحث عن الامتحان ونبدأه فوراً
+                    // جلب رقم الأسبوع الحالي أولاً
+                    await fetchCurrentWeek();
+                    
+                    // ثم البحث عن الامتحان
                     await findTodayExam();
                     
                 } else {
@@ -825,7 +864,7 @@
             document.getElementById('savedCodeHint').style.display = 'none';
         }
 
-        // ==================== ✅ دالة جلب الامتحان ====================
+        // ==================== ✅ دالة جلب الامتحان (باستخدام الاسم الأصلي فقط) ====================
         async function findTodayExam() {
             // ✅ التحقق من الوقت المسموح به أولاً
             if (!isTimeAllowed()) {
@@ -870,13 +909,15 @@
                 return;
             }
 
-            const todaySubject = SUBJECT_SCHEDULE[dayOfWeek];
+            // ✅ تحديد حرف المادة من الجدول
+            currentSubjectLetter = SUBJECT_SCHEDULE[dayOfWeek];
             
             showLoading();
 
             try {
-                const examId = `${currentStudent.grade}_${todaySubject}`;
-                console.log('🔍 البحث عن الامتحان:', examId);
+                // ✅ استخدام المعرف الأصلي فقط: GradeLetter_SubjectLetter (مثال: A_S)
+                const examId = `${currentStudent.grade}_${currentSubjectLetter}`;
+                console.log('🔍 البحث عن الامتحان بالمعرف الأصلي:', examId);
                 
                 const examRef = doc(db, 'exams', examId);
                 const examSnap = await getDoc(examRef);
@@ -895,17 +936,26 @@
                     return;
                 }
 
+                // ✅ تم العثور على الامتحان - نفس الامتحان لكل الأسابيع
                 currentExam = examData;
                 currentExamId = examId;
-                currentExamWeek = examData.week || '?';
 
-                document.getElementById('examSubject').textContent = SUBJECT_NAMES[todaySubject];
+                // عرض معلومات الامتحان مع رقم الأسبوع الحالي
+                document.getElementById('examSubject').textContent = SUBJECT_NAMES[currentSubjectLetter];
                 document.getElementById('examDay').textContent = DAY_NAMES[dayOfWeek];
                 document.getElementById('examWeek').textContent = `الأسبوع ${currentExamWeek}`;
                 document.getElementById('examStatusText').textContent = 'الامتحان متاح';
 
-                // ✅ التحقق من الامتحان السابق ثم البدء التلقائي
-                await checkIfExamined();
+                // ✅ التحقق من وجود نتيجة لهذا الأسبوع فقط
+                const previousResult = await checkPreviousResult();
+                
+                if (previousResult) {
+                    // يوجد نتيجة لهذا الأسبوع - عرضها
+                    showPreviousResult(previousResult);
+                } else {
+                    // لا يوجد نتيجة لهذا الأسبوع - بدء الامتحان
+                    startExam();
+                }
 
             } catch (error) {
                 console.error('خطأ في جلب الامتحان:', error);
@@ -939,30 +989,10 @@
             document.getElementById('questionsContainer').innerHTML = '';
         }
 
-        // ==================== ✅ التحقق من تكرار الامتحان ====================
-        async function checkIfExamined() {
-            const resultId = `${currentStudent.code}_G${currentStudent.grade}_S${currentExam.subject}_W${currentExamWeek}`;
-            
-            try {
-                const resultRef = doc(db, 'results', resultId);
-                const resultSnap = await getDoc(resultRef);
-
-                if (resultSnap.exists()) {
-                    const previousResult = resultSnap.data();
-                    showPreviousResult(previousResult);
-                } else {
-                    // ✅ بدء الامتحان تلقائياً
-                    startExam();
-                }
-            } catch (error) {
-                console.error('خطأ في التحقق من الامتحان السابق:', error);
-            }
-        }
-
         function showPreviousResult(result) {
             document.getElementById('examStatus').style.display = 'block';
             document.getElementById('examStatus').innerHTML = `
-                ⚠️ لقد أديت هذا الامتحان مسبقاً
+                ⚠️ لقد أديت امتحان الأسبوع ${currentExamWeek} مسبقاً
                 <br>
                 <strong>درجتك: ${result.score}/${result.totalQuestions}</strong>
             `;
@@ -973,7 +1003,7 @@
             showResultCard(result);
         }
 
-        // ==================== ✅ بدء الامتحان التلقائي ====================
+        // ==================== ✅ بدء الامتحان ====================
         window.startExam = function() {
             document.getElementById('submitBtn').style.display = 'block';
             
@@ -1052,7 +1082,7 @@
             saveToLocalStorage();
         };
 
-        // ==================== ✅ نظام المؤقت الذكي (20 دقيقة) ====================
+        // ==================== ✅ نظام المؤقت ====================
         function startTimer(minutes) {
             timeLeft = minutes * 60;
             const timerEl = document.getElementById('timer');
@@ -1066,18 +1096,16 @@
                 const secs = timeLeft % 60;
                 timerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
                 
-                // مؤثرات بصرية ذكية
                 timerEl.classList.remove('warning-yellow', 'warning-orange', 'warning-red');
                 
-                if (timeLeft <= 60) { // آخر دقيقة
+                if (timeLeft <= 60) {
                     timerEl.classList.add('warning-red');
-                } else if (timeLeft <= 120) { // آخر دقيقتين
+                } else if (timeLeft <= 120) {
                     timerEl.classList.add('warning-orange');
-                } else if (timeLeft <= 300) { // آخر 5 دقائق
+                } else if (timeLeft <= 300) {
                     timerEl.classList.add('warning-yellow');
                 }
                 
-                // ✅ التسليم التلقائي عند انتهاء الوقت
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     submitExam();
@@ -1144,7 +1172,8 @@
                 const monthlyPoints = score + (score === totalQuestions ? 1 : 0);
                 const batch = writeBatch(db);
                 
-                const resultId = `${currentStudent.code}_G${currentStudent.grade}_S${currentExam.subject}_W${currentExamWeek}`;
+                // ✅ معرف النتيجة يحتوي على الأسبوع: StudentCode_G[Grade]_S[Subject]_W[WeekNumber]
+                const resultId = `${currentStudent.code}_G${currentStudent.grade}_S${currentSubjectLetter}_W${currentExamWeek}`;
                 
                 const resultRef = doc(db, 'results', resultId);
                 
@@ -1153,8 +1182,8 @@
                     studentCode: currentStudent.code,
                     studentName: currentStudent.name,
                     examId: currentExamId,
-                    examSubject: currentExam.subject,
-                    examSubjectName: SUBJECT_NAMES[currentExam.subject],
+                    examSubject: currentSubjectLetter,
+                    examSubjectName: SUBJECT_NAMES[currentSubjectLetter],
                     grade: currentStudent.grade,
                     gradeLetter: currentStudent.gradeLetter,
                     week: currentExamWeek,
@@ -1175,7 +1204,8 @@
                     lastExamDate: new Date().toISOString(),
                     lastExamScore: score,
                     lastExamId: currentExamId,
-                    lastExamWeek: currentExamWeek
+                    lastExamWeek: currentExamWeek,
+                    lastExamSubject: currentSubjectLetter
                 });
 
                 await batch.commit();
@@ -1190,7 +1220,7 @@
                     monthlyPoints
                 });
 
-                showAlert(`✅ تم تسجيل درجتك: ${score}/${totalQuestions}`, 'success');
+                showAlert(`✅ تم تسجيل درجتك: ${score}/${totalQuestions} للأسبوع ${currentExamWeek}`, 'success');
 
             } catch (error) {
                 console.error('خطأ في تسليم الامتحان:', error);
@@ -1205,7 +1235,7 @@
             document.getElementById('questionsContainer').style.display = 'none';
             
             document.getElementById('resultScore').textContent = `${result.score}/${result.totalQuestions}`;
-            document.getElementById('resultMessage').textContent = `درجتك: ${result.score} من ${result.totalQuestions}`;
+            document.getElementById('resultMessage').textContent = `درجتك في امتحان الأسبوع ${currentExamWeek}: ${result.score} من ${result.totalQuestions}`;
             document.getElementById('monthlyPoints').textContent = result.monthlyPoints || result.score;
             
             document.getElementById('resultCard').style.display = 'block';
@@ -1223,13 +1253,13 @@
             statusEl.style.display = 'block';
             statusEl.className = `exam-status alert-${type}`;
             statusEl.innerHTML = message;
-            document.getElementById('examWeek').textContent = '';
         }
 
         window.logout = function() {
             currentStudent = null;
             currentExam = null;
-            currentExamWeek = null;
+            currentExamWeek = 1;
+            currentSubjectLetter = null;
             studentAnswers = {};
             
             if (timerInterval) clearInterval(timerInterval);
@@ -1248,6 +1278,7 @@
             checkSavedCode();
         });
 
+        // تصدير الدوال إلى النافذة
         window.login = login;
         window.useSavedCode = useSavedCode;
         window.clearSavedCode = clearSavedCode;
@@ -1257,8 +1288,10 @@
         window.logout = logout;
         window.showExamAgain = showExamAgain;
 
-        console.log('✅ صفحة الطالب جاهزة مع تجربة مستخدم محسنة وتحديد وقت الامتحان (7 مساءً - 12 منتصف الليل)');
-        console.log('📅 الجدول الدراسي المعدل: الأحد عربي، الإثنين إنجليزي، الثلاثاء علوم، الأربعاء دراسات، الخميس رياضيات');
+        console.log('✅ نظام الامتحانات يعمل بالشكل الصحيح:');
+        console.log('📌 الامتحان: ثابت (مثال: A_S)');
+        console.log('📌 النتيجة: متغيرة حسب الأسبوع (مثال: StudentCode_G[S]_S[A]_W1)');
+        console.log('📌 الطالب يمكنه امتحان نفس المادة في أسابيع مختلفة');
     </script>
 </body>
 </html>
