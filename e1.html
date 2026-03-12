@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>امتحان الصف الأول الإعدادي - مدرسة الجيل الجديد</title>
+    <title>امتحان الصف الثاني الإعدادي - مدرسة الجيل الجديد</title>
     <!-- KaTeX for LaTeX support -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
@@ -351,7 +351,7 @@
     <div class="container">
         <div class="school-header">
             <h1>📚 مدرسة الجيل الجديد الخاصة</h1>
-            <div class="sub">امتحان الصف الأول الإعدادي - الرياضيات</div>
+            <div class="sub">امتحان الصف الثاني الإعدادي - الرياضيات (التناسب)</div>
         </div>
 
         <div class="loading-bar" id="loadingBar"></div>
@@ -365,12 +365,12 @@
             </div>
             
             <div class="code-input-group">
-                <input type="text" id="studentCode" placeholder="أدخل الكود (مثال: D123456)" maxlength="7" dir="ltr">
+                <input type="text" id="studentCode" placeholder="أدخل الكود (مثال: E123456)" maxlength="7" dir="ltr">
                 <button onclick="login()">←</button>
             </div>
 
             <div style="text-align: center; color: #666; font-size: 0.9rem;">
-                ⏰ الامتحان متاح طوال اليوم (تم تعطيل شرط الوقت للتجربة)
+                ⏰ الامتحان متاح طوال اليوم (تم تعطيل شرط الوقت)
             </div>
         </div>
 
@@ -430,65 +430,65 @@
         const db = getFirestore(app);
 
         // ========== Constants ==========
-        const GRADE_LETTER = 'D'; // الأول الإعدادي
-        const GRADE_NAME = 'الصف الأول الإعدادي';
+        const GRADE_LETTER = 'E'; // الثاني الإعدادي
+        const GRADE_NAME = 'الصف الثاني الإعدادي';
         const SUBJECT_LETTER = 'M'; // رياضيات
-        const SUBJECT_NAME = 'الرياضيات';
-        const EXAM_ID = 'D_M'; // grade_subject
+        const SUBJECT_NAME = 'الرياضيات (التناسب)';
+        const EXAM_ID = 'E_M'; // grade_subject
         const CURRENT_WEEK = getWeekNumber();
         const EXAM_DURATION = 20 * 60; // 20 minutes in seconds
         
-        // Exam Questions (مع دعم LaTeX) - تم تعديل السؤال العاشر
+        // Exam Questions (مع دعم LaTeX)
         const EXAM_QUESTIONS = [
             {
-                text: 'أي مما يأتي يساوي $(-3)^2$ ؟',
-                options: ['$-9$', '$9$', '$6$', '$-6$'],
-                correct: 1 // الثاني (9)
+                text: 'إذا كان $3a = 5b$ فما قيمة $\\frac{3a}{b}$ ؟',
+                options: ['$3$', '$5$', '$\\frac{3}{5}$', '$\\frac{5}{8}$'],
+                correct: 1 // الثاني (5)
             },
             {
-                text: 'أي مما يأتي يساوي $-0.00025$ ؟',
-                options: ['$-2.5 \\times 10^{4}$', '$2.5 \\times 10^{-4}$', '$-2.5 \\times 10^{-4}$', '$2.5 \\times 10^{-5}$'],
-                correct: 2 // الثالث (-2.5 × 10^-4)
+                text: 'إذا كانت $4 , y , 3 , x$ كميات متناسبة فما قيمة $\\frac{x}{y}$ ؟',
+                options: ['$\\frac{3}{4}$', '$\\frac{4}{3}$', '$\\frac{3}{7}$', '$\\frac{4}{7}$'],
+                correct: 0 // الأول (3/4)
             },
             {
-                text: 'المعكوس الضربي للعدد $\\sqrt[3]{\\frac{8}{27}}$ هو ............',
-                options: ['$\\frac{4}{9}$', '$-\\frac{2}{3}$', '$-\\frac{3}{2}$', '$\\frac{3}{2}$'],
-                correct: 3 // الرابع (3/2)
+                text: 'إذا كانت $2 , 6 , x + 15$ في تناسب فما قيمة $x$ ؟',
+                options: ['$1$', '$2$', '$3$', '$4$'],
+                correct: 2 // الثالث (3)
             },
             {
-                text: 'نصف العدد $2^x$ هو ............',
-                options: ['$1^x$', '$(\\frac{1}{2})^x$', '$2^{x+1}$', '$2^{x-1}$'],
-                correct: 3 // الرابع (2^{x-1})
+                text: 'إذا كانت $a , 2 , b , 4$ في تناسب متسلسل فما قيمة $a + b$ ؟',
+                options: ['$2$', '$4$', '$6$', '$9$'],
+                correct: 3 // الرابع (9)
             },
             {
-                text: 'أي مما يأتي يساوي $y \\times y^3 \\times y^{-3} \\times x^{-2} \\times x^{-2} \\times x^{-3}$ ؟',
-                options: ['$y^7 x^{-7}$', '$y \\times x^{-7}$', '$y^2 \\times x^{-5}$', '$y \\times x^{-5}$'],
-                correct: 1 // الثاني (y × x^-7)
+                text: 'ما العدد الذي إذا أضيف لكل من الأعداد $6 , 3 , 1$ تصبح في تناسب متسلسل ؟',
+                options: ['$1$', '$2$', '$3$', '$4$'],
+                correct: 2 // الثالث (3)
             },
             {
-                text: 'أي من الآتي هو الأكبر؟',
-                options: ['$7.2 \\times 10^{-3}$', '$7.2 \\times 10^{-5}$', '$6.4 \\times 10^{-2}$', '$4.6 \\times 10^{-7}$'],
-                correct: 0 // الأول (7.2 × 10^-3)
+                text: 'إذا كانت $3 , x , 12$ ثلاث كميات متناسبة فما قيمة $x$ ؟',
+                options: ['$15$', '$-6$', '$6$', '$\\pm 6$'],
+                correct: 3 // الرابع (±6)
             },
             {
-                text: '$\\sqrt[3]{x^{12}} = \\sqrt{\\dots}$',
-                options: ['$x^4$', '$x^6$', '$x^8$', '$x^{12}$'],
-                correct: 2 // الثالث (x^8)
+                text: 'إذا كان $\\frac{y}{12} = \\frac{x}{4}$ فما قيمة $\\frac{x}{y}$ ؟',
+                options: ['$\\frac{3}{1}$', '$\\frac{1}{3}$', '$\\frac{2}{12}$', '$\\frac{12}{3}$'],
+                correct: 1 // الثاني (1/3)
             },
             {
-                text: 'إذا كان $x^3 = -1$ فما قيمة $x$؟',
-                options: ['$-1$', '$1$', '$0$', '$-3$'],
-                correct: 0 // الأول (-1)
+                text: 'إذا كان $\\frac{a}{b} = \\frac{3}{4}$ فما قيمة $\\frac{3b}{4a}$ ؟',
+                options: ['$\\frac{9}{16}$', '$\\frac{16}{9}$', '$1$', '$\\frac{9}{8}$'],
+                correct: 2 // الثالث (1)
             },
             {
-                text: 'إذا كان $745 \\times 10^{-9} = k \\times 10^{-7}$ فما قيمة $k$؟',
-                options: ['$74.5$', '$7.45$', '$0.745$', '$0.0745$'],
-                correct: 1 // الثاني (7.45)
+                text: 'ما الثالث المتناسب للأعداد : $4 , 8 , 3$ ؟',
+                options: ['$\\frac{8}{12}$', '$\\frac{32}{3}$', '$\\frac{12}{8}$', '$6$'],
+                correct: 3 // الرابع (6)
             },
             {
-                text: '$\\sqrt[3]{x^{18}}$',
-                options: ['$x^6$', '$x^9$', '$x^{12}$', '$x^{15}$'],
-                correct: 2 // الثالث (x^12) - تم التعديل هنا
+                text: 'إذا كان $3x - 2y = 0$ فما قيمة $\\frac{x}{y}$ ؟',
+                options: ['$-\\frac{2}{3}$', '$\\frac{3}{5}$', '$\\frac{3}{2}$', '$\\frac{2}{3}$'],
+                correct: 3 // الرابع (2/3)
             }
         ];
 
@@ -634,14 +634,18 @@
                 let studentSnap = await getDoc(studentRef);
                 
                 if (!studentSnap.exists()) {
-                    // Static data for first grade students
+                    // Static data for second grade students
                     const staticStudents = {
-                        'D443446': { name: 'احمد غريب محمد احمد عمران احمد', gradeLetter: 'D' },
-                        'D654926': { name: 'احمد محمد محروس عبد العظيم', gradeLetter: 'D' },
-                        'D315599': { name: 'آدم ابراهيم ابوالعلا ابراهيم حسن', gradeLetter: 'D' },
-                        'D742266': { name: 'ادم رمضان عبدالمنعم محمد حسن', gradeLetter: 'D' },
-                        'D600622': { name: 'ادم ياسر فوزى حسن شمروخ', gradeLetter: 'D' },
-                        'D845076': { name: 'ادهم صبرى حسن ابراهيم السيد', gradeLetter: 'D' }
+                        'E861010': { name: 'احمد السيد احمد محمد', gradeLetter: 'E' },
+                        'E645076': { name: 'احمد حسين محمد جوده عمر', gradeLetter: 'E' },
+                        'E837290': { name: 'احمد محمد فؤاد حافظ', gradeLetter: 'E' },
+                        'E157247': { name: 'احمد محمد محمد نصر ابراهيم', gradeLetter: 'E' },
+                        'E988578': { name: 'احمد وليد احمد محمد محمود', gradeLetter: 'E' },
+                        'E386081': { name: 'أدم حسين محمد جوده عمر', gradeLetter: 'E' },
+                        'E454737': { name: 'ادهم عادل محروس عراقى كيلانى', gradeLetter: 'E' },
+                        'E590065': { name: 'اسلام احمد رمضان عبدالعزيز محمد', gradeLetter: 'E' },
+                        'E734924': { name: 'اشرف ايمن فؤاد محمد عبدالله', gradeLetter: 'E' },
+                        'E457520': { name: 'ايمن ياسر خميس منصور', gradeLetter: 'E' }
                     };
                     
                     if (staticStudents[code]) {
@@ -659,9 +663,9 @@
                     currentStudent = { code: code, ...studentSnap.data() };
                 }
 
-                // Check if student is in first grade
-                if (currentStudent.gradeLetter !== 'D') {
-                    showAlert('❌ هذا الامتحان مخصص للصف الأول الإعدادي فقط', 'error');
+                // Check if student is in second grade
+                if (currentStudent.gradeLetter !== 'E') {
+                    showAlert('❌ هذا الامتحان مخصص للصف الثاني الإعدادي فقط', 'error');
                     hideLoading();
                     return;
                 }
