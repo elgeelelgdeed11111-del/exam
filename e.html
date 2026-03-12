@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>امتحان الصف الثاني الإعدادي - مدرسة الجيل الجديد</title>
+    <title>امتحان الصف الأول الإعدادي - مدرسة الجيل الجديد</title>
     <!-- KaTeX for LaTeX support -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
@@ -351,7 +351,7 @@
     <div class="container">
         <div class="school-header">
             <h1>📚 مدرسة الجيل الجديد الخاصة</h1>
-            <div class="sub">امتحان الصف الثاني الإعدادي - الرياضيات</div>
+            <div class="sub">امتحان الصف الأول الإعدادي - الرياضيات (اختبار شهر مارس)</div>
         </div>
 
         <div class="loading-bar" id="loadingBar"></div>
@@ -365,12 +365,12 @@
             </div>
             
             <div class="code-input-group">
-                <input type="text" id="studentCode" placeholder="أدخل الكود (مثال: E123456)" maxlength="7" dir="ltr">
+                <input type="text" id="studentCode" placeholder="أدخل الكود (مثال: D123456)" maxlength="7" dir="ltr">
                 <button onclick="login()">←</button>
             </div>
 
             <div style="text-align: center; color: #666; font-size: 0.9rem;">
-                ⏰ الامتحان متاح طوال اليوم (تم تعطيل شرط الوقت للتجربة)
+                ⏰ الامتحان متاح طوال اليوم (تم تعطيل شرط الوقت)
             </div>
         </div>
 
@@ -430,65 +430,67 @@
         const db = getFirestore(app);
 
         // ========== Constants ==========
-        const GRADE_LETTER = 'E'; // الثاني الإعدادي
-        const GRADE_NAME = 'الصف الثاني الإعدادي';
+        const GRADE_LETTER = 'D'; // الأول الإعدادي
+        const GRADE_NAME = 'الصف الأول الإعدادي';
         const SUBJECT_LETTER = 'M'; // رياضيات
-        const SUBJECT_NAME = 'الرياضيات';
-        const EXAM_ID = 'E_M'; // grade_subject
+        const SUBJECT_NAME = 'الرياضيات (اختبار شهر مارس)';
+        const EXAM_ID = 'D_M'; // grade_subject
         const CURRENT_WEEK = getWeekNumber();
         const EXAM_DURATION = 20 * 60; // 20 minutes in seconds
         
-        // Exam Questions (مع دعم LaTeX) - تم تعديل السؤال السادس ليكون X×Y
+        // Exam Questions (مع دعم LaTeX)
         const EXAM_QUESTIONS = [
+            // المجموعة الأولى (أسئلة 1-5)
             {
-                text: 'ما الأول المتناسب للعددين $9$ و $12$؟',
-                options: ['$6.75$', '$108$', '$\\pm 6\\sqrt{3}$', '$16$'],
-                correct: 3 // الرابع (16)
+                text: 'أي مما يلي يعبر عن العدد 10 مليون بالصيغة العلمية؟',
+                options: ['$1 \\times 10^6$', '$1 \\times 10^7$', '$10 \\times 10^7$', '$10^{-7}$'],
+                correct: 1 // الثاني (1 × 10^7)
             },
             {
-                text: 'إذا كانت $X = \\{4\\}$ فإن $n(X^2) = \\dots$',
-                options: ['$4$', '$1$', '$\\{(4,4)\\}$', '$16$'],
-                correct: 1 // الثاني (1)
+                text: 'إذا كان : $\\sqrt[3]{x} = \\sqrt{9}$ ، فما قيمة $x$ ؟',
+                options: ['$3$', '$-3$', '$-9$', '$-27$'],
+                correct: 3 // الرابع (27)
             },
             {
-                text: 'ما مدى الدالة : $f = \\{(4,3) , (1,3) , (2,5) , (5,5)\\}$ ؟',
-                options: ['$\\{4, 2, 5\\}$', '$\\{3, 5\\}$', '$\\{1, 3, 5, 4\\}$', '$\\{1, 3, 5\\}$'],
-                correct: 1 // الثاني ({3,5})
+                text: '$(4x^2)(-2x^4) = \\dots$',
+                options: ['$2x^6$', '$-8x^8$', '$-8x^6$', '$-2x^6$'],
+                correct: 2 // الثالث (-8x^6)
             },
             {
-                text: 'إلى أي حاصل ضرب ديكارتي مما يلي تنتمي النقطة $(-\\sqrt{17} , 5)$ ؟',
-                options: ['$\\mathbb{R} \\times \\mathbb{R}$', '$\\mathbb{Q} \\times \\mathbb{Q}$', '$\\mathbb{Z} \\times \\mathbb{Z}$', '$\\mathbb{N} \\times \\mathbb{N}$'],
-                correct: 0 // الأول (R×R)
+                text: 'إذا كان : $a = \\frac{2x - 6}{6 - 2x}$ ، فما قيمة $a$ ؟',
+                options: ['$3$', '$-3$', '$-2$', '$-1$'],
+                correct: 3 // الرابع (-1)
             },
             {
-                text: 'إذا كان $\\{(5,2)\\} = X \\times Y$ فإن $n(X^2) \\times n(Y^2) = \\dots$',
-                options: ['$100$', '$10$', '$1$', '$25$'],
-                correct: 2 // الثالث (1)
+                text: 'أي من المتباينات التالية يكون أحد حلولها في $\\mathbb{Q}$ هو $x = -3$ ؟',
+                options: ['$-x > 3$', '$x \\geq -2$', '$x > -3$', '$x > -3$ -'],
+                correct: 2 // الثالث (x > -3)
+            },
+            // المجموعة الثانية (اختبار شهر مارس - أسئلة 6-10)
+            {
+                text: 'أي مما يأتي هو المعكوس الضربي للعدد $5^{-2}$ ؟',
+                options: ['$-\\frac{1}{25}$', '$-25$', '$\\frac{1}{25}$', '$25$'],
+                correct: 3 // الرابع (25)
             },
             {
-                text: 'إذا كان $X \\times Y = \\{(3,1) , (2,1) , (4,1)\\}$ فإن $(1,1) \\in \\dots$',
-                options: ['$Y \\times X$', '$X \\times Y$', '$X^2$', '$Y^2$'],
-                correct: 1 // الثاني (X×Y) - تم التعديل هنا
+                text: 'ما المتباينة التي تعبر عن أن ثلاثة أمثال العدد $x$ يكون أكبر من أو يساوي 4؟',
+                options: ['$x \\geq 4$', '$3x \\geq 4$', '$4x \\leq 3$', '$3x > 4$'],
+                correct: 1 // الثاني (3x ≥ 4)
             },
             {
-                text: '$\\sqrt{25} = \\dots$',
-                options: ['$5$', '$\\pm 5$', '$-5$', '$256$'],
-                correct: 0 // الأول (5)
+                text: 'إذا كان : $(x+3)(x-3) = ax^2 + bx + c$ ، فما قيمة $a + b + c$ ؟',
+                options: ['صفر', '$1$', '$-9$', '$-8$'],
+                correct: 3 // الرابع (-8)
             },
             {
-                text: '$\\sqrt[3]{8} = \\dots$',
-                options: ['$-2$', '$\\pm 2$', '$1$', '$2$'],
-                correct: 3 // الرابع (2)
+                text: '$\\dots \\div (8ab) = 4ab$',
+                options: ['$2$', '$12ab$', '$2a^2b^2$', '$32a^2b^2$'],
+                correct: 3 // الرابع (32a^2b^2)
             },
             {
-                text: 'ما هو المجال في العلاقة؟',
-                options: ['$X$', '$Y$', '$XY$', '$YX$'],
-                correct: 0 // الأول (X)
-            },
-            {
-                text: 'ما هو المدى في العلاقة؟',
-                options: ['$X^2$', '$Y$', '$Y^2$', '$X$'],
-                correct: 1 // الثاني (Y)
+                text: 'إذا كان : $a , b$ هما الجذران التربيعيان للعدد $c$ ، فكم يساوي $a + b$ ؟',
+                options: ['$2a$', '$2b$', '$1$', 'صفر'],
+                correct: 3 // الرابع (صفر)
             }
         ];
 
@@ -634,18 +636,14 @@
                 let studentSnap = await getDoc(studentRef);
                 
                 if (!studentSnap.exists()) {
-                    // Static data for second grade students
+                    // Static data for first grade students
                     const staticStudents = {
-                        'E861010': { name: 'احمد السيد احمد محمد', gradeLetter: 'E' },
-                        'E645076': { name: 'احمد حسين محمد جوده عمر', gradeLetter: 'E' },
-                        'E837290': { name: 'احمد محمد فؤاد حافظ', gradeLetter: 'E' },
-                        'E157247': { name: 'احمد محمد محمد نصر ابراهيم', gradeLetter: 'E' },
-                        'E988578': { name: 'احمد وليد احمد محمد محمود', gradeLetter: 'E' },
-                        'E386081': { name: 'أدم حسين محمد جوده عمر', gradeLetter: 'E' },
-                        'E454737': { name: 'ادهم عادل محروس عراقى كيلانى', gradeLetter: 'E' },
-                        'E590065': { name: 'اسلام احمد رمضان عبدالعزيز محمد', gradeLetter: 'E' },
-                        'E734924': { name: 'اشرف ايمن فؤاد محمد عبدالله', gradeLetter: 'E' },
-                        'E457520': { name: 'ايمن ياسر خميس منصور', gradeLetter: 'E' }
+                        'D443446': { name: 'احمد غريب محمد احمد عمران احمد', gradeLetter: 'D' },
+                        'D654926': { name: 'احمد محمد محروس عبد العظيم', gradeLetter: 'D' },
+                        'D315599': { name: 'آدم ابراهيم ابوالعلا ابراهيم حسن', gradeLetter: 'D' },
+                        'D742266': { name: 'ادم رمضان عبدالمنعم محمد حسن', gradeLetter: 'D' },
+                        'D600622': { name: 'ادم ياسر فوزى حسن شمروخ', gradeLetter: 'D' },
+                        'D845076': { name: 'ادهم صبرى حسن ابراهيم السيد', gradeLetter: 'D' }
                     };
                     
                     if (staticStudents[code]) {
@@ -663,9 +661,9 @@
                     currentStudent = { code: code, ...studentSnap.data() };
                 }
 
-                // Check if student is in second grade
-                if (currentStudent.gradeLetter !== 'E') {
-                    showAlert('❌ هذا الامتحان مخصص للصف الثاني الإعدادي فقط', 'error');
+                // Check if student is in first grade
+                if (currentStudent.gradeLetter !== 'D') {
+                    showAlert('❌ هذا الامتحان مخصص للصف الأول الإعدادي فقط', 'error');
                     hideLoading();
                     return;
                 }
