@@ -781,27 +781,56 @@
             return (currentTimeInMinutes >= startTime && currentTimeInMinutes <= endTime);
         }
 
-        // ==================== ✅ دالة التحقق من نتيجة سابقة (الأسبوع مهم هنا) ====================
-        async function checkPreviousResult() {
-            if (!currentStudent || !currentSubjectLetter) return null;
-            
-            // ✅ معرف النتيجة يحتوي على الأسبوع: StudentCode_G[Grade]_S[Subject]_W[WeekNumber]
-            const resultId = `${currentStudent.code}_G${currentStudent.grade}_S${currentSubjectLetter}_W${currentExamWeek}`;
+        // ==================== ✅ دالة التحقق من آخر امتحان لنفس المادة (خلال 6 أيام) ====================
+        async function checkLastExamDate() {
+            if (!currentStudent || !currentSubjectLetter) return false;
             
             try {
-                const resultRef = doc(db, 'results', resultId);
-                const resultSnap = await getDoc(resultRef);
+                // البحث عن جميع نتائج هذا الطالب لهذه المادة
+                const resultsQuery = query(
+                    collection(db, 'results'),
+                    where('studentCode', '==', currentStudent.code),
+                    where('examSubject', '==', currentSubjectLetter)
+                );
                 
-                if (resultSnap.exists()) {
-                    console.log(`✅ تم العثور على نتيجة للأسبوع ${currentExamWeek}`);
-                    return resultSnap.data();
+                const querySnapshot = await getDocs(resultsQuery);
+                
+                if (querySnapshot.empty) {
+                    console.log('📝 لا توجد نتائج سابقة لهذه المادة - يمكن الامتحان');
+                    return true; // لا يوجد امتحانات سابقة، يمكن الامتحان
                 }
                 
-                console.log(`✅ لا توجد نتيجة للأسبوع ${currentExamWeek} - يمكن البدء`);
-                return null;
+                // ترتيب النتائج حسب التاريخ (أحدثها أولاً)
+                const results = [];
+                querySnapshot.forEach(doc => {
+                    results.push(doc.data());
+                });
+                
+                // ترتيب تنازلي حسب التاريخ
+                results.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                // أحدث نتيجة
+                const lastResult = results[0];
+                const lastExamDate = new Date(lastResult.date);
+                const today = new Date();
+                
+                // حساب الفرق بالأيام
+                const diffTime = today - lastExamDate;
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                
+                console.log(`📅 آخر امتحان كان في: ${lastExamDate.toLocaleDateString()} (منذ ${diffDays} يوم)`);
+                
+                if (diffDays >= 6) {
+                    console.log('✅ مر 6 أيام أو أكثر على آخر امتحان - يمكن الامتحان مجدداً');
+                    return true;
+                } else {
+                    console.log(`⏳ لم يمر 6 أيام بعد - الباقي ${6 - diffDays} يوم`);
+                    return false;
+                }
+                
             } catch (error) {
-                console.error('❌ خطأ في التحقق من النتيجة:', error);
-                return null;
+                console.error('❌ خطأ في التحقق من آخر امتحان:', error);
+                return true; // في حالة الخطأ، نسمح بالامتحان
             }
         }
 
@@ -936,7 +965,29 @@
                     return;
                 }
 
-                // ✅ تم العثور على الامتحان - نفس الامتحان لكل الأسابيع
+                // ✅ التحقق من تاريخ آخر امتحان (6 أيام)
+                const canTakeExam = await checkLastExamDate();
+                
+                if (!canTakeExam) {
+                    // عرض رسالة منع بسبب عدم مرور 6 أيام
+                    document.getElementById('examStatus').style.display = 'block';
+                    document.getElementById('examStatus').innerHTML = `
+                        <div class="time-restriction-warning">
+                            <div class="time-icon">⏳</div>
+                            <div style="font-size: 1.2rem; margin-bottom: 10px;">لا يمكنك أداء الامتحان الآن</div>
+                            <p>لقد أديت امتحان ${SUBJECT_NAMES[currentSubjectLetter]} مؤخراً</p>
+                            <p>يجب الانتظار 6 أيام بين كل امتحان والآخر</p>
+                            <p style="font-size: 0.9rem; margin-top: 10px;">يمكنك المحاولة لاحقاً</p>
+                        </div>
+                    `;
+                    
+                    document.getElementById('submitBtn').style.display = 'none';
+                    document.getElementById('questionsContainer').innerHTML = '';
+                    hideLoading();
+                    return;
+                }
+
+                // ✅ تم العثور على الامتحان ويمكن للطالب أدائه
                 currentExam = examData;
                 currentExamId = examId;
 
@@ -946,16 +997,8 @@
                 document.getElementById('examWeek').textContent = `الأسبوع ${currentExamWeek}`;
                 document.getElementById('examStatusText').textContent = 'الامتحان متاح';
 
-                // ✅ التحقق من وجود نتيجة لهذا الأسبوع فقط
-                const previousResult = await checkPreviousResult();
-                
-                if (previousResult) {
-                    // يوجد نتيجة لهذا الأسبوع - عرضها
-                    showPreviousResult(previousResult);
-                } else {
-                    // لا يوجد نتيجة لهذا الأسبوع - بدء الامتحان
-                    startExam();
-                }
+                // بدء الامتحان مباشرة
+                startExam();
 
             } catch (error) {
                 console.error('خطأ في جلب الامتحان:', error);
@@ -987,20 +1030,6 @@
             
             document.getElementById('submitBtn').style.display = 'none';
             document.getElementById('questionsContainer').innerHTML = '';
-        }
-
-        function showPreviousResult(result) {
-            document.getElementById('examStatus').style.display = 'block';
-            document.getElementById('examStatus').innerHTML = `
-                ⚠️ لقد أديت امتحان الأسبوع ${currentExamWeek} مسبقاً
-                <br>
-                <strong>درجتك: ${result.score}/${result.totalQuestions}</strong>
-            `;
-            
-            document.getElementById('submitBtn').style.display = 'none';
-            
-            displayExamQuestions(true, result.answers);
-            showResultCard(result);
         }
 
         // ==================== ✅ بدء الامتحان ====================
@@ -1291,7 +1320,7 @@
         console.log('✅ نظام الامتحانات يعمل بالشكل الصحيح:');
         console.log('📌 الامتحان: ثابت (مثال: A_S)');
         console.log('📌 النتيجة: متغيرة حسب الأسبوع (مثال: StudentCode_G[S]_S[A]_W1)');
-        console.log('📌 الطالب يمكنه امتحان نفس المادة في أسابيع مختلفة');
+        console.log('📌 يمكن للطالب امتحان نفس المادة كل 6 أيام');
     </script>
 </body>
 </html>
