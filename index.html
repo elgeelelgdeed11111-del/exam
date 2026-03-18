@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>إسماعيل عماد - منصة البرمجة</title>
+    <!-- خط Tajawal من Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- أيقونات Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: #fcf5f2;
+            color: #1a1a1a;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            direction: rtl;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 24px 20px;
+            box-shadow: 0 10px 30px rgba(0, 40, 0, 0.08);
+            border: 1px solid rgba(0, 60, 0, 0.05);
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #1a3b2e;
+            padding: 6px 14px;
+            border-radius: 30px;
+            color: white;
+        }
+
+        .logo i {
+            font-size: 14px;
+            color: #ffb5a7;
+        }
+
+        .logo span {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .badge {
+            background: #fff1ed;
+            color: #1a3b2e;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid #ffd5cc;
+        }
+
+        .title-section {
+            margin-bottom: 28px;
+            text-align: center;
+        }
+
+        .main-title {
+            font-size: 36px;
+            font-weight: 900;
+            color: #1a3b2e;
+            line-height: 1.2;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+        }
+
+        .sub-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #cc5a4a;
+            background: #fff1ed;
+            display: inline-block;
+            padding: 4px 16px;
+            border-radius: 40px;
+            margin-top: 4px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            background: #1a3b2e;
+            color: white;
+            border: none;
+            padding: 14px 0;
+            border-radius: 16px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(26, 59, 46, 0.2);
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+            opacity: 0.9;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #1a3b2e;
+            border: 1.5px solid #1a3b2e;
+            box-shadow: none;
+        }
+
+        .btn-outline:active {
+            background: rgba(26, 59, 46, 0.05);
+        }
+
+        .hints {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 24px;
+            padding: 6px 12px;
+            background: #fff1ed;
+            border-radius: 40px;
+            font-size: 12px;
+        }
+
+        .hint-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            color: #1a1a1a;
+        }
+
+        .hint-item i {
+            color: #cc5a4a;
+            font-size: 11px;
+        }
+
+        .hint-item .highlight {
+            color: #1a3b2e;
+            font-weight: 700;
+            margin: 0 2px;
+        }
+
+        .form-container {
+            transition: all 0.2s ease;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #1a1a1a;
+            padding-right: 4px;
+        }
+
+        label i {
+            margin-left: 6px;
+            color: #cc5a4a;
+            font-size: 12px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            background: #fff9f7;
+            border: 1.5px solid #ffd5cc;
+            border-radius: 18px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 15px;
+            color: #1a1a1a;
+            transition: all 0.2s ease;
+        }
+
+        input[type="password"], 
+        input[type="text"] {
+            padding-left: 45px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #1a3b2e;
+            background: #ffffff;
+        }
+
+        input::placeholder {
+            color: #b3a69f;
+            font-size: 13px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #1a3b2e;
+            opacity: 0.5;
+            font-size: 16px;
+        }
+
+        .password-toggle:hover {
+            opacity: 1;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: #1a3b2e;
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 18px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-submit:active {
+            transform: scale(0.97);
+            opacity: 0.9;
+        }
+
+        .btn-loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            text-align: center;
+            margin-bottom: 16px;
+            font-weight: 500;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-success {
+            background: #e6f2ed;
+            color: #1a3b2e;
+            border: 1px solid #c0d9cf;
+        }
+
+        .message-error {
+            background: #ffedeb;
+            color: #cc5a4a;
+            border: 1px solid #ffcdc5;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .switch-form {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #5c5c5c;
+        }
+
+        .switch-form span {
+            color: #1a3b2e;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            text-decoration-color: #ffb5a7;
+            margin-right: 4px;
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 11px;
+            color: #b3a69f;
+        }
+
+        .verify-hint {
+            font-size: 10px;
+            color: #1a3b2e;
+            margin-top: 4px;
+            margin-right: 4px;
+            display: none;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .verify-hint i {
+            color: #cc5a4a;
+            font-size: 8px;
+        }
+
+        .verify-hint.show {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div class="logo">
+                    <i class="fas fa-code"></i>
+                    <span>EduTech</span>
+                </div>
+                <div class="badge">
+                    إسماعيل عماد
+                </div>
+            </div>
+
+            <div class="title-section">
+                <h1 class="main-title">منصة البرمجة</h1>
+                <div class="sub-title">
+                    <i class="fas fa-chevron-left" style="font-size: 9px;"></i>
+                    تعلم بالعربية
+                    <i class="fas fa-chevron-right" style="font-size: 9px;"></i>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button id="showLoginBtn" class="btn">تسجيل دخول</button>
+                <button id="showSignupBtn" class="btn btn-outline">إنشاء حساب</button>
+            </div>
+
+            <div class="hints">
+                <div class="hint-item" id="hintSignup">
+                    <i class="fas fa-plus-circle"></i>
+                    <span><span class="highlight">جديد</span> اشترك الآن</span>
+                </div>
+                <div class="hint-item" id="hintLogin">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span><span class="highlight">قديم</span> سجل دخول</span>
+                </div>
+            </div>
+
+            <!-- ========== قسم إنشاء الحساب ========== -->
+            <div id="signupForm" class="form-container hidden">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> الاسم الثلاثي</label>
+                    <input type="text" id="signupName" placeholder="مثال: أحمد محمد علي" maxlength="50">
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-phone"></i> رقم الهاتف</label>
+                    <input type="tel" id="signupPhone" placeholder="01xxxxxxxxx" maxlength="11" inputmode="numeric">
+                    <div class="verify-hint" id="signupPhoneHint">
+                        <i class="fas fa-envelope"></i> سيتم تحويله لبريد وهمي
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-school"></i> المدرسة</label>
+                    <input type="text" id="signupSchool" placeholder="اسم المدرسة">
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> كلمة المرور</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="signupPassword" placeholder="٨ أحرف على الأقل" minlength="8">
+                        <i class="fas fa-eye password-toggle" onclick="togglePassword('signupPassword', this)"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-check-circle"></i> تأكيد كلمة المرور</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="signupConfirmPassword" placeholder="أعد كتابة كلمة المرور">
+                        <i class="fas fa-eye password-toggle" onclick="togglePassword('signupConfirmPassword', this)"></i>
+                    </div>
+                </div>
+
+                <button id="signupBtn" class="btn-submit">إنشاء الحساب</button>
+                
+                <div class="switch-form">
+                    لديك حساب؟ <span id="switchToLogin">تسجيل دخول</span>
+                </div>
+            </div>
+
+            <!-- ========== قسم تسجيل الدخول ========== -->
+            <div id="loginForm" class="form-container">
+                <div class="form-group">
+                    <label><i class="fas fa-phone"></i> رقم الهاتف</label>
+                    <input type="tel" id="loginPhone" placeholder="01xxxxxxxxx" maxlength="11" inputmode="numeric">
+                    <div class="verify-hint" id="loginPhoneHint">
+                        <i class="fas fa-envelope"></i> سيتم تحويله @ismail.academy
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> كلمة المرور</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="loginPassword" placeholder="أدخل كلمة المرور">
+                        <i class="fas fa-eye password-toggle" onclick="togglePassword('loginPassword', this)"></i>
+                    </div>
+                </div>
+
+                <button id="loginBtn" class="btn-submit">تسجيل الدخول</button>
+                
+                <div class="switch-form">
+                    جديد في المنصة؟ <span id="switchToSignup">إنشاء حساب</span>
+                </div>
+            </div>
+
+            <!-- رسائل الخطأ والنجاح -->
+            <div id="messageContainer" class="hidden"></div>
+            
+            <div class="footer-note">
+                منصة تعليم البرمجة © 2024
+            </div>
+        </div>
+    </div>
+
+    <!-- دالة إظهار/إخفاء كلمة المرور -->
+    <script>
+        function togglePassword(inputId, icon) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
+
+    <!-- Firebase SDK - الحل النهائي 100% -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPgtF_GqT95QkMwwoJMGiZWFPjHFdA_N0",
+            authDomain: "manassa-oloom.firebaseapp.com",
+            databaseURL: "https://manassa-oloom-default-rtdb.firebaseio.com",
+            projectId: "manassa-oloom",
+            storageBucket: "manassa-oloom.firebasestorage.app",
+            messagingSenderId: "475047988456",
+            appId: "1:475047988456:web:ab25a9b01b5c77483b0d5d",
+            measurementId: "G-F0N011WQB9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // ====== الحل النهائي والمضمون 100% ======
+        // متغيرات القفل المتعددة المستويات
+        let isManualAction = false;           // يمنع التوجيه أثناء العمليات اليدوية
+        let isRedirecting = false;             // يمنع التوجيه المزدوج
+        let authReady = false;                  // يتأكد أن الصفحة جاهزة
+        
+        // تأخير تفعيل onAuthStateChanged حتى بعد تحميل الصفحة بالكامل
+        // واستقرار حالة المصادقة
+        setTimeout(() => {
+            authReady = true;
+            
+            onAuthStateChanged(auth, (user) => {
+                // شروط صارمة للتوجيه التلقائي:
+                // 1. يوجد مستخدم
+                // 2. لسنا في منتصف عملية يدوية
+                // 3. لسنا في منتصف عملية توجيه بالفعل
+                // 4. الصفحة جاهزة (تم تحميلها بالكامل)
+                // 5. المستخدم ليس في عملية تسجيل جديدة (نتأكد من localStorage)
+                if (user && !isManualAction && !isRedirecting && authReady) {
+                    // نتأكد أن هذه ليست استجابة لحدث تسجيل جديد
+                    const justRegistered = sessionStorage.getItem('justRegistered');
+                    if (!justRegistered) {
+                        console.log("Auto redirecting to home...");
+                        isRedirecting = true;
+                        window.location.replace('home.html');
+                    } else {
+                        // مسح العلامة بعد التحقق
+                        sessionStorage.removeItem('justRegistered');
+                    }
+                }
+            });
+        }, 2000); // زودنا الوقت لـ 2 ثانية لضمان الاستقرار
+
+        // DOM Elements
+        const showLoginBtn = document.getElementById('showLoginBtn');
+        const showSignupBtn = document.getElementById('showSignupBtn');
+        const hintSignup = document.getElementById('hintSignup');
+        const hintLogin = document.getElementById('hintLogin');
+        const signupForm = document.getElementById('signupForm');
+        const loginForm = document.getElementById('loginForm');
+        const switchToLogin = document.getElementById('switchToLogin');
+        const switchToSignup = document.getElementById('switchToSignup');
+        const messageContainer = document.getElementById('messageContainer');
+        const signupPhoneHint = document.getElementById('signupPhoneHint');
+        const loginPhoneHint = document.getElementById('loginPhoneHint');
+
+        // Inputs
+        const signupName = document.getElementById('signupName');
+        const signupPhone = document.getElementById('signupPhone');
+        const signupSchool = document.getElementById('signupSchool');
+        const signupPassword = document.getElementById('signupPassword');
+        const signupConfirm = document.getElementById('signupConfirmPassword');
+        const loginPhone = document.getElementById('loginPhone');
+        const loginPassword = document.getElementById('loginPassword');
+
+        // Buttons
+        const signupBtn = document.getElementById('signupBtn');
+        const loginBtn = document.getElementById('loginBtn');
+
+        // Helper functions
+        function showMessage(text, isSuccess = true) {
+            messageContainer.classList.remove('hidden');
+            messageContainer.className = isSuccess ? 'message message-success' : 'message message-error';
+            messageContainer.textContent = text;
+            
+            setTimeout(() => {
+                messageContainer.classList.add('hidden');
+            }, 4000);
+        }
+
+        function clearMessage() {
+            messageContainer.classList.add('hidden');
+        }
+
+        function setButtonLoading(button, isLoading) {
+            if (isLoading) {
+                button.classList.add('btn-loading');
+                const originalText = button.textContent;
+                button.dataset.originalText = originalText;
+                button.innerHTML = `جاري التحميل <span class="spinner"></span>`;
+                button.disabled = true;
+            } else {
+                button.classList.remove('btn-loading');
+                button.innerHTML = button.dataset.originalText || '';
+                button.disabled = false;
+            }
+        }
+
+        function validateEgyptianPhone(phone) {
+            return /^01[0-9]{9}$/.test(phone);
+        }
+
+        function formatPhoneToEmail(phone) {
+            return `${phone}@ismail.academy`;
+        }
+
+        function showSignupForm() {
+            signupForm.classList.remove('hidden');
+            loginForm.classList.add('hidden');
+            showLoginBtn.classList.remove('btn-outline');
+            showSignupBtn.classList.add('btn-outline');
+            clearMessage();
+        }
+
+        function showLoginForm() {
+            loginForm.classList.remove('hidden');
+            signupForm.classList.add('hidden');
+            showSignupBtn.classList.remove('btn-outline');
+            showLoginBtn.classList.add('btn-outline');
+            clearMessage();
+        }
+
+        // Event listeners للتبديل بين النماذج
+        showLoginBtn.addEventListener('click', showLoginForm);
+        showSignupBtn.addEventListener('click', showSignupForm);
+        switchToLogin.addEventListener('click', showLoginForm);
+        switchToSignup.addEventListener('click', showSignupForm);
+        hintSignup.addEventListener('click', showSignupForm);
+        hintLogin.addEventListener('click', showLoginForm);
+
+        // عرض التلميحات عند كتابة رقم الهاتف
+        signupPhone.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);
+            if (this.value.length >= 11) {
+                signupPhoneHint.classList.add('show');
+            } else {
+                signupPhoneHint.classList.remove('show');
+            }
+        });
+
+        loginPhone.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);
+            if (this.value.length >= 11) {
+                loginPhoneHint.classList.add('show');
+            } else {
+                loginPhoneHint.classList.remove('show');
+            }
+        });
+
+        // منع إدخال أرقام في حقل الاسم والمدرسة
+        signupName.addEventListener('input', function() {
+            this.value = this.value.replace(/[0-9]/g, '');
+        });
+        
+        signupSchool.addEventListener('input', function() {
+            this.value = this.value.replace(/[0-9]/g, '');
+        });
+
+        // ====== Signup مع Firebase Auth (الحل النهائي) ======
+        signupBtn.addEventListener('click', async () => {
+            // التحقق من المدخلات
+            const name = signupName.value.trim();
+            const phone = signupPhone.value.trim();
+            const school = signupSchool.value.trim();
+            const password = signupPassword.value.trim();
+            const confirm = signupConfirm.value.trim();
+
+            // التحقق من الحقول الفارغة
+            if (!name || !phone || !school || !password || !confirm) {
+                showMessage('جميع الحقول مطلوبة', false);
+                return;
+            }
+
+            // التحقق من صحة الاسم (عربي فقط)
+            if (!/^[\u0600-\u06FF\s]+$/.test(name)) {
+                showMessage('الاسم يجب أن يكون بالعربية فقط', false);
+                return;
+            }
+
+            // التحقق من رقم الهاتف
+            if (!validateEgyptianPhone(phone)) {
+                showMessage('رقم الهاتف غير صحيح (11 رقم يبدأ بـ 01)', false);
+                return;
+            }
+
+            // التحقق من طول كلمة المرور
+            if (password.length < 8) {
+                showMessage('كلمة المرور ٨ أحرف على الأقل', false);
+                return;
+            }
+
+            // التحقق من تطابق كلمة المرور
+            if (password !== confirm) {
+                showMessage('كلمة المرور غير متطابقة', false);
+                return;
+            }
+
+            try {
+                // تفعيل القفل - نمنع أي توجيه تلقائي
+                isManualAction = true;
+                setButtonLoading(signupBtn, true);
+                
+                // وضع علامة في sessionStorage أن هذا تسجيل جديد
+                sessionStorage.setItem('justRegistered', 'true');
+
+                // تحويل رقم الهاتف إلى بريد وهمي
+                const email = formatPhoneToEmail(phone);
+                
+                // إنشاء الحساب في Firebase Auth
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // حفظ البيانات في Firestore
+                await setDoc(doc(db, 'STU_users', user.uid), {
+                    name,
+                    phone,
+                    school,
+                    email: email,
+                    createdAt: new Date().toISOString(),
+                    userType: 'student',
+                    uid: user.uid
+                });
+
+                // عرض رسالة النجاح
+                showMessage('تم إنشاء الحساب بنجاح! جاري تحويلك...', true);
+                
+                // تفريغ الحقول
+                signupName.value = '';
+                signupPhone.value = '';
+                signupSchool.value = '';
+                signupPassword.value = '';
+                signupConfirm.value = '';
+
+                // الانتقال بعد التأكد من حفظ البيانات وظهور الرسالة
+                setTimeout(() => {
+                    if (!isRedirecting) {
+                        isRedirecting = true;
+                        window.location.replace('home.html');
+                    }
+                }, 2000);
+
+            } catch (error) {
+                // في حالة الخطأ، نعطل القفل ونمسح العلامة
+                isManualAction = false;
+                sessionStorage.removeItem('justRegistered');
+                setButtonLoading(signupBtn, false);
+                
+                console.error('Signup error:', error);
+                
+                // رسائل خطأ مخصصة
+                if (error.code === 'auth/email-already-in-use') {
+                    showMessage('رقم الهاتف مسجل مسبقاً', false);
+                } else if (error.code === 'auth/weak-password') {
+                    showMessage('كلمة المرور ضعيفة', false);
+                } else {
+                    showMessage('حدث خطأ في التسجيل، حاول مرة أخرى', false);
+                }
+            }
+        });
+
+        // ====== Login مع Firebase Auth (الحل النهائي) ======
+        loginBtn.addEventListener('click', async () => {
+            const phone = loginPhone.value.trim();
+            const password = loginPassword.value.trim();
+
+            // التحقق من المدخلات
+            if (!phone || !password) {
+                showMessage('يرجى إدخال رقم الهاتف وكلمة المرور', false);
+                return;
+            }
+
+            // التحقق من رقم الهاتف
+            if (!validateEgyptianPhone(phone)) {
+                showMessage('رقم الهاتف غير صحيح', false);
+                return;
+            }
+
+            try {
+                // تفعيل القفل
+                isManualAction = true;
+                setButtonLoading(loginBtn, true);
+
+                // تحويل رقم الهاتف إلى بريد وهمي
+                const email = formatPhoneToEmail(phone);
+                
+                // تسجيل الدخول
+                await signInWithEmailAndPassword(auth, email, password);
+                
+                // عرض رسالة النجاح
+                showMessage('تم تسجيل الدخول! جاري التحويل...', true);
+                
+                // الانتقال بعد ظهور الرسالة
+                setTimeout(() => {
+                    if (!isRedirecting) {
+                        isRedirecting = true;
+                        window.location.replace('home.html');
+                    }
+                }, 1500);
+
+            } catch (error) {
+                // في حالة الخطأ، نعطل القفل
+                isManualAction = false;
+                setButtonLoading(loginBtn, false);
+                
+                console.error('Login error:', error);
+                
+                // رسائل خطأ مخصصة
+                if (error.code === 'auth/user-not-found') {
+                    showMessage('رقم الهاتف غير مسجل', false);
+                } else if (error.code === 'auth/wrong-password') {
+                    showMessage('كلمة المرور غير صحيحة', false);
+                } else {
+                    showMessage('بيانات الدخول غير صحيحة', false);
+                }
+            }
+        });
+
+        // إظهار نموذج تسجيل الدخول بشكل افتراضي
+        showLoginForm();
+    </script>
+</body>
+</html>
